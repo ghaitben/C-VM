@@ -5,6 +5,9 @@ project(Compiler)
 add_library(Utils
 		tokenizer.h
 		tokenizer.c
+
+		error.h
+		error.c
 		)
 
 add_executable(main main.c)

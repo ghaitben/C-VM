@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "error.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,10 +42,7 @@ void TokenizerArray_push(TokenizerArray *tokenizer_array, Token token) {
 		if(tokenizer_array->count + 1 > tokenizer_array->capacity) {
 				tokenizer_array->capacity *= 2;
 				tokenizer_array->array = (Token *) realloc(tokenizer_array, tokenizer_array->capacity);
-				if(tokenizer_array->array == NULL) {
-						printf("Failed to allocate memory");
-						exit(1);
-				}
+				CHECK(tokenizer_array->array != NULL, "Failed allocating memory");
 		}
 
 		tokenizer_array->array[tokenizer_array->count] = token;
