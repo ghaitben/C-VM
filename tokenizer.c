@@ -47,6 +47,12 @@ void initTokenizer(Tokenizer *tokenizer) {
 		initTokenizerArray(&tokenizer->token_array);
 }
 
+void freeTokenizer(Tokenizer *tokenizer) {
+		freeTokenizerArray(&tokenizer->token_array);
+		free(tokenizer->source_file);
+		initTokenizer(tokenizer);
+}
+
 void initTokenizerArray(TokenizerArray *tokenizer_array) {
 		tokenizer_array->array = NULL;
 		tokenizer_array->count = 0;
@@ -64,7 +70,7 @@ void freeTokenizerArray(TokenizerArray *tokenizer_array) {
 void TokenizerArray_push(TokenizerArray *tokenizer_array, Token token) {
 		if(tokenizer_array->count + 1 > tokenizer_array->capacity) {
 				tokenizer_array->capacity *= 2;
-				tokenizer_array->array = (Token *) realloc(tokenizer_array, tokenizer_array->capacity);
+				tokenizer_array->array = (Token *) realloc(tokenizer_array->array, tokenizer_array->capacity);
 				CHECK(tokenizer_array->array != NULL, "Failed allocating memory");
 		}
 
@@ -203,7 +209,7 @@ static void addToken() {
 						createAndPushString();
 						break;
 
-				// Unknown Token
+				// Error: Unknown Token
 				default:
 						CHECK(false, "Unknown Token");
 		}

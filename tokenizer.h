@@ -49,7 +49,8 @@ enum TokenType {
 struct Token {
 		/*
 		 * String representation of the token.
-		 * The struct has owns the memory of the field lexeme.
+		 * Token owns the memory of the field:
+		 *    + lexeme
 		 * */
 		char *lexeme;
 		TokenType type;
@@ -71,16 +72,26 @@ void TokenizerArray_push(TokenizerArray *tokenizer_array, Token token);
  * There will be one global instance of this struct.
  * This will help keep track of our state (i.e src file, start column, current column, and the current line).
  * The global instance of this struct will remain in memory throughout the whole compilation process.
+ * 
+ * Tokenizer owns the memory of the fields:
+ *    + token_array
+ *    + source_file
  * */
 struct Tokenizer {
-		const char *source_file;
+		char *source_file;
 		TokenizerArray token_array;
 		int start;
 		int current;
 		int line;
 };
 void initTokenizer(Tokenizer *tokenizer);
+void freeTokenizer(Tokenizer *tokenizer);
 
 
-// Loads the source file to memory and saves it to the tokenizer.source_file field.
+/* 
+ * Loads the source file to memory and saves it to the tokenizer.source_file field.
+ * Creates tokens from the source file and saves them to tokenizer.token_array.
+ * */
 void tokenize(const char *filepath);
+
+extern Tokenizer tokenizer;
