@@ -69,17 +69,18 @@ void TokenizerArray_push(TokenizerArray *tokenizer_array, Token token);
 
 /*
  * There will be one global instance of this struct.
- * This will help keep track of our state (i.e start column, current column, and the current line).
+ * This will help keep track of our state (i.e src file, start column, current column, and the current line).
  * The global instance of this struct will remain in memory throughout the whole compilation process.
  * */
 struct Tokenizer {
+		const char *source_file;
 		TokenizerArray token_array;
-		int col_start;
-		int col_current;
+		int start;
+		int current;
 		int line;
 };
 void initTokenizer(Tokenizer *tokenizer);
 
 
-// Loads the source file to memory and returns a stream of tokens.
-Token *tokenize(const char *source_file);
+// Loads the source file to memory and saves it to the tokenizer.source_file field.
+void tokenize(const char *filepath);
