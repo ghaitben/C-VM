@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 /* 
  * Forward declarations of all the static functions in the file.
@@ -15,8 +16,15 @@ static void addToken();
 static bool reachedEOF();
 static char eatChar();
 static char peekChar();
-static void pushToken(TokenType type);
 static char *sliceString(int start, int end);
+static void skipWhiteSpace();
+static bool matchAndEatChar(char c);
+static void createAndPushToken(TokenType type);
+static void createAndPushIdentifier();
+static void createAndPushDigit();
+static void createAndPushString();
+static bool isDigit(char c);
+static bool isAlpha(char c);
 
 Tokenizer tokenizer;
 
@@ -69,9 +77,10 @@ void tokenize(const char *filepath) {
 		tokenizer.source_file = readFile(filepath);
 
 		while(!reachedEOF()) {
-				tokenizer.start = tokenizer.current;
 				addToken();
 		}
+
+		createAndPushToken(TOKEN_EOF);
 }
 
 static bool reachedEOF() {
@@ -90,7 +99,7 @@ static char *sliceString(int start, int end) {
 		return buffer;
 }
 
-static void pushToken(TokenType type) {
+static void createAndPushToken(TokenType type) {
 		Token token;
 		token.type = type;
 		token.line = tokenizer.line;
@@ -98,7 +107,112 @@ static void pushToken(TokenType type) {
 		TokenizerArray_push(&tokenizer.token_array, token);
 }
 
+static void skipWhiteSpace() {
+		while(!reachedEOF() && isspace(peekChar())) {
+				tokenizer.line += eatChar() == '\n';
+		}
+}
+
+static void createAndPushIdentifier() {
+		while(!reachedEOF() && (isAlpha(peekChar()) || isDigit(peekChar()))) eatChar();
+		createAndPushToken(TOKEN_IDENTIFIER);
+}
+
+static void createAndPushDigit() {
+		while(!reachedEOF() && isDigit(peekChar())) eatChar();
+
+		if(matchAndEatChar('.')) {
+				while(!reachedEOF() && isDigit(peekChar())) eatChar();
+		}
+		
+		createAndPushToken(TOKEN_NUMBER);
+}
+
+static void createAndPushString() {
+		while(!reachedEOF() && peekChar() != '"') eatChar();
+		CHECK(!reachedEOF(), "Expected closing '\"' for a string literal");
+
+		createAndPushToken(TOKEN_STRING);
+}
+
+static bool isAlpha(char c) {
+		return (c >= 'a' && c <= 'z') || 
+				  (c >= 'A' && c <= 'Z') ||
+					c == '_';
+}
+
+static bool isDigit(char c) {
+		return c >= '0' && c <= '9';
+}
+
 static void addToken() {
+		skipWhiteSpace();
+		tokenizer.start = tokenizer.current;
+		
+		char c = eatChar();
+
+		if(isAlpha(c)) createAndPushIdentifier();
+		if(isDigit(c)) createAndPushDigit();
+		switch(c) {
+				case '(':
+						createAndPushToken(TOKEN_LEFT_PAREN);
+						break;
+				case ')':
+						createAndPushToken(TOKEN_RIGHT_PAREN);
+						break;
+				case '*':
+						createAndPushToken(TOKEN_STAR);
+						break;
+				case '{':
+						createAndPushToken(TOKEN_LEFT_BRACE);
+						break;
+				case '}':
+						createAndPushToken(TOKEN_RIGHT_BRACE);
+						break;
+				case '.':
+						createAndPushToken(TOKEN_DOT);
+						break;
+				case ',':
+						createAndPushToken(TOKEN_COMMA);
+						break;
+				case ';':
+						createAndPushToken(TOKEN_SEMICOLON);
+						break;
+				case '+':
+						createAndPushToken(TOKEN_PLUS);
+						break;
+				case '-':
+						createAndPushToken(TOKEN_MINUS);
+						break;
+				case '/':
+						createAndPushToken(TOKEN_SLASH);
+						break;
+				case '<':
+						if(matchAndEatChar('=')) createAndPushToken(TOKEN_LESS_EQUAL);
+						else createAndPushToken(TOKEN_LESS);
+						break;
+				case '>':
+						if(matchAndEatChar('=')) createAndPushToken(TOKEN_GREATER_EQUAL);
+						else createAndPushToken(TOKEN_GREATER);
+						break;
+				case '!':
+						if(matchAndEatChar('=')) createAndPushToken(TOKEN_BANG_EQUAL);
+						else createAndPushToken(TOKEN_BANG);
+						break;
+				case '"':
+						createAndPushString();
+						break;
+
+				// Unknown Token
+				default:
+						CHECK(false, "Unknown Token");
+		}
+}
+
+static bool matchAndEatChar(char c) {
+		if(reachedEOF() || peekChar() != c) return false;
+		eatChar();
+		return true;
 }
 
 static char peekChar() {
