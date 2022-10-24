@@ -27,6 +27,43 @@ static bool isDigit(char c);
 static bool isAlpha(char c);
 
 Tokenizer tokenizer;
+char *keywords[] = {
+		"and",
+		"class",
+		"else",
+		"false",
+		"for",
+		"fun",
+		"if",
+		"nil",
+		"or",
+		"print",
+		"return",
+		"super",
+		"this",
+		"true",
+		"var",
+		"while"
+};
+
+TokenType token_of_keyword[] = {
+  TOKEN_AND,
+	TOKEN_CLASS,
+	TOKEN_ELSE,
+	TOKEN_FALSE,
+  TOKEN_FOR,
+	TOKEN_FUN,
+	TOKEN_IF,
+	TOKEN_NIL,
+	TOKEN_OR,
+  TOKEN_PRINT, 
+	TOKEN_RETURN,
+	TOKEN_SUPER,
+	TOKEN_THIS,
+  TOKEN_TRUE,
+	TOKEN_VAR,
+	TOKEN_WHILE
+};
 
 void initToken(Token *token) {
 		token->lexeme = NULL;
@@ -104,11 +141,30 @@ static char *sliceString(int start, int end) {
 		return buffer;
 }
 
+/*
+ * Compares the lexeme (char *) with all the reserved keywords and returns the corresponding TokenType
+ * if there is any match. It returns TOKEN_IDENTIFIER otherwise (If there is no match).
+ * */
+static TokenType identifierType(char *lexeme) {
+		size_t keywords_size = sizeof(keywords) / sizeof(keywords[0]);
+		size_t lexeme_size = strlen(lexeme);
+		for(int i = 0; i < keywords_size; ++i) {
+				bool same_size = lexeme_size == strlen(keywords[i]);
+				bool same_string = strcmp(keywords[i], lexeme) == 0;
+				if(same_size && same_string) return token_of_keyword[i];
+		}
+		return TOKEN_IDENTIFIER;
+}
+
+/*
+ * This is the function where all the tokens are created and pushed to 
+ * the array of tokens of the global tokenizer.
+ * */
 static void createAndPushToken(TokenType type) {
 		Token token;
-		token.type = type;
 		token.line = tokenizer.line;
 		token.lexeme = sliceString(tokenizer.start, tokenizer.current);
+		token.type = identifierType(token.lexeme);
 		TokenizerArray_push(&tokenizer.token_array, token);
 }
 

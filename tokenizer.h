@@ -95,3 +95,12 @@ void freeTokenizer(Tokenizer *tokenizer);
 void tokenize(const char *filepath);
 
 extern Tokenizer tokenizer;
+
+/*
+ * keywords is an array of reserved keywords of the language.
+ * token_of_keyword[i] returns the TokenType (enum) of keywords[i].
+ * It is important to keep the elements of keywords[] and token_of_keywords[] in
+ * the same order.
+ * */
+extern char *keywords[];
+extern TokenType token_of_keyword[];
