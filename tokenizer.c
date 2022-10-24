@@ -69,8 +69,9 @@ void freeTokenizerArray(TokenizerArray *tokenizer_array) {
 
 void TokenizerArray_push(TokenizerArray *tokenizer_array, Token token) {
 		if(tokenizer_array->count + 1 > tokenizer_array->capacity) {
-				tokenizer_array->capacity *= 2;
-				tokenizer_array->array = (Token *) realloc(tokenizer_array->array, tokenizer_array->capacity);
+				tokenizer_array->capacity = tokenizer_array->capacity > 0 ? 2 * tokenizer_array->capacity : 8;
+				tokenizer_array->array = (Token *) realloc(tokenizer_array->array,
+								sizeof(Token) * tokenizer_array->capacity);
 				CHECK(tokenizer_array->array != NULL, "Failed allocating memory");
 		}
 
@@ -85,8 +86,6 @@ void tokenize(const char *filepath) {
 		while(!reachedEOF()) {
 				addToken();
 		}
-
-		createAndPushToken(TOKEN_EOF);
 }
 
 static bool reachedEOF() {
@@ -138,6 +137,8 @@ static void createAndPushString() {
 		while(!reachedEOF() && peekChar() != '"') eatChar();
 		CHECK(!reachedEOF(), "Expected closing '\"' for a string literal");
 
+		// Eat the enclosing '"' of the string literal
+		eatChar();
 		createAndPushToken(TOKEN_STRING);
 }
 
@@ -156,9 +157,6 @@ static void addToken() {
 		tokenizer.start = tokenizer.current;
 		
 		char c = eatChar();
-
-		if(isAlpha(c)) createAndPushIdentifier();
-		if(isDigit(c)) createAndPushDigit();
 		switch(c) {
 				case '(':
 						createAndPushToken(TOKEN_LEFT_PAREN);
@@ -190,6 +188,10 @@ static void addToken() {
 				case '-':
 						createAndPushToken(TOKEN_MINUS);
 						break;
+				case '=':
+						if(matchAndEatChar('=')) createAndPushToken(TOKEN_EQUAL_EQUAL);
+						else createAndPushToken(TOKEN_EQUAL);
+						break;
 				case '/':
 						createAndPushToken(TOKEN_SLASH);
 						break;
@@ -208,10 +210,21 @@ static void addToken() {
 				case '"':
 						createAndPushString();
 						break;
+				case '\0':
+						createAndPushToken(TOKEN_EOF);
+						break;
 
-				// Error: Unknown Token
 				default:
-						CHECK(false, "Unknown Token");
+						if(isAlpha(c)) {
+								createAndPushIdentifier();
+						}
+						else if(isDigit(c)) {
+								createAndPushDigit();
+						}
+						else {
+								// Error: Unknown Token
+								CHECK(false, "Uknown Token.");
+						}
 		}
 }
 
