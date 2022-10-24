@@ -17,7 +17,7 @@
 #define CHECK_HELPER(condition, message, filename, line) \
 		check(condition, message, filename, line)
 
-void check(bool condition, const char *message, const char *filename, int line) {
+static void check(bool condition, const char *message, const char *filename, int line) {
 		if(condition) return;
 		fprintf(stderr, "[File : %s][Line : %d] %s\n",
 						filename, line, message);

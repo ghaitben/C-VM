@@ -8,6 +8,9 @@ add_library(Utils
 
 		error.h
 		error.c
+
+		parser.h
+		parser.c
 		)
 
 add_executable(main main.c)
