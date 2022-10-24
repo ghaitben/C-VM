@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef enum TokenType TokenType;
 typedef struct Token Token;
 typedef struct Tokenizer Tokenizer;
@@ -56,9 +58,9 @@ struct Token {
 		TokenType type;
 		int line;
 };
-void initToken(Token *token);
+void initToken(Token *token, TokenType type, char *lexeme, int line);
 void freeToken(Token *token);
-void tokenEquals(Token *token_a, Token *token_b);
+bool tokenEquals(Token *token_a, Token *token_b);
 
 struct TokenizerArray {
 		int count;

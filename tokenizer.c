@@ -65,18 +65,18 @@ TokenType token_of_keyword[] = {
 	TOKEN_WHILE
 };
 
-void initToken(Token *token) {
-		token->lexeme = NULL;
-		token->type = TOKEN_UNINITIALIZED;
-		token->line = -1;
+void initToken(Token *token, TokenType type, char *lexeme, int line) {
+		token->type = type;
+		token->lexeme = strcpy(token->lexeme, lexeme);
+		token->line = line;
 }
 
 void freeToken(Token *token) {
 		free(token->lexeme);
-		initToken(token);
+		initToken(token, /*type = */TOKEN_UNINITIALIZED,/*lexeme = */ NULL,/*line = */ -1);
 }
 
-void tokenEquals(Token *token_a, Token *token_b) {
+bool tokenEquals(Token *token_a, Token *token_b) {
 		return strcmp(token_a->lexeme, token_b->lexeme) == 0 && 
 				token_a->type == token_b->type;
 }
