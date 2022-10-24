@@ -95,7 +95,7 @@ static bool reachedEOF() {
 static char *sliceString(int start, int end) {
 		int string_size = end - start;
 
-		char *buffer = malloc(string_size);
+		char *buffer = malloc(string_size + 1);
 		CHECK(buffer != NULL, "Failed to allocate memory");
 
 		memcpy(buffer, tokenizer.source_file + tokenizer.start, string_size);
@@ -260,5 +260,6 @@ static char *readFile(const char *filepath) {
 		CHECK(bytes_read == file_size, "Failed to read the source file");
 
 		buffer[file_size] = '\0';
+		fclose(file);
 		return buffer;
 }
