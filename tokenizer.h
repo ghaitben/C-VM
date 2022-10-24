@@ -1,3 +1,6 @@
+#ifndef COMPILER_TOKENIZER_H
+#define COMPILER_TOKENIZER_H
+
 #include <stdbool.h>
 
 typedef enum TokenType TokenType;
@@ -107,3 +110,5 @@ extern Tokenizer tokenizer;
  * */
 extern char *keywords[];
 extern TokenType token_of_keyword[];
+
+#endif

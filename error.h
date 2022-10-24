@@ -1,3 +1,6 @@
+#ifndef COMPILER_ERROR_H
+#define COMPILER_ERROR_H
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -20,3 +23,5 @@ void check(bool condition, const char *message, const char *filename, int line) 
 						filename, line, message);
 		exit(-1);
 }
+
+#endif

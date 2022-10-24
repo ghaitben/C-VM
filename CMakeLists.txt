@@ -11,4 +11,6 @@ add_library(Utils
 		)
 
 add_executable(main main.c)
+add_executable(tokenizer_test tokenizer_test.c)
+
 target_link_libraries(main PUBLIC Utils)

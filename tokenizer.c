@@ -67,7 +67,7 @@ TokenType token_of_keyword[] = {
 
 void initToken(Token *token, TokenType type, char *lexeme, int line) {
 		token->type = type;
-		token->lexeme = strcpy(token->lexeme, lexeme);
+		token->lexeme = lexeme;
 		token->line = line;
 }
 
@@ -77,6 +77,11 @@ void freeToken(Token *token) {
 }
 
 bool tokenEquals(Token *token_a, Token *token_b) {
+		// if one of the tokens is TOKEN_EOF there is not need to compare the lexemes.
+		if(token_a->type == TOKEN_EOF || token_b->type == TOKEN_EOF) {
+				return token_a->type == TOKEN_EOF && token_b->type == TOKEN_EOF;
+		}
+
 		return strcmp(token_a->lexeme, token_b->lexeme) == 0 && 
 				token_a->type == token_b->type;
 }
@@ -147,21 +152,6 @@ static char *sliceString(int start, int end) {
 }
 
 /*
- * Compares the lexeme (char *) with all the reserved keywords and returns the corresponding TokenType
- * if there is any match. It returns TOKEN_IDENTIFIER otherwise (If there is no match).
- * */
-static TokenType identifierType(char *lexeme) {
-		size_t keywords_size = sizeof(keywords) / sizeof(keywords[0]);
-		size_t lexeme_size = strlen(lexeme);
-		for(int i = 0; i < keywords_size; ++i) {
-				bool same_size = lexeme_size == strlen(keywords[i]);
-				bool same_string = strcmp(keywords[i], lexeme) == 0;
-				if(same_size && same_string) return token_of_keyword[i];
-		}
-		return TOKEN_IDENTIFIER;
-}
-
-/*
  * This is the function where all the tokens are created and pushed to 
  * the array of tokens of the global tokenizer.
  * */
@@ -169,7 +159,7 @@ static void createAndPushToken(TokenType type) {
 		Token token;
 		token.line = tokenizer.line;
 		token.lexeme = sliceString(tokenizer.start, tokenizer.current);
-		token.type = identifierType(token.lexeme);
+		token.type = type;
 		TokenizerArray_push(&tokenizer.token_array, token);
 }
 
@@ -181,6 +171,21 @@ static void skipWhiteSpace() {
 
 static void createAndPushIdentifier() {
 		while(!reachedEOF() && (isAlpha(peekChar()) || isDigit(peekChar()))) eatChar();
+		
+		// Compares the lexeme (char *) with all the reserved keywords and returns the corresponding TokenType
+		// if there is any match. It returns TOKEN_IDENTIFIER otherwise (If there is no match).
+		size_t keywords_size = sizeof(keywords) / sizeof(keywords[0]);
+		int lexeme_size = tokenizer.current - tokenizer.start;
+		for(int i = 0; i < keywords_size; ++i) {
+				bool same_size = lexeme_size == strlen(keywords[i]);
+				bool same_string = memcmp(tokenizer.source_file + tokenizer.start, 
+								keywords[i], lexeme_size) == 0;
+
+				if(same_size && same_string) {
+						createAndPushToken(token_of_keyword[i]);
+						return;
+				}
+		}
 		createAndPushToken(TOKEN_IDENTIFIER);
 }
 
@@ -198,7 +203,7 @@ static void createAndPushString() {
 		while(!reachedEOF() && peekChar() != '"') eatChar();
 		CHECK(!reachedEOF(), "Expected closing '\"' for a string literal");
 
-		// Eat the enclosing '"' of the string literal
+		// Eat the enclosing '"' of the string literal.
 		eatChar();
 		createAndPushToken(TOKEN_STRING);
 }
