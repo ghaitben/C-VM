@@ -11,6 +11,12 @@ add_library(Utils
 
 		parser.h
 		parser.c
+
+		vm.h
+		vm.c
+		
+		value.h
+		value.c
 		)
 
 add_executable(main main.c)

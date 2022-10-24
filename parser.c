@@ -1,7 +1,11 @@
 #include "parser.h"
 #include "error.h"
+#include "value.h"
+#include "vm.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 // Forward declaration of static helper functions.
 static Token *eatToken();
@@ -55,12 +59,20 @@ static void expression() {
 		equality();
 }
 
+static OpCode opCodeOf(char *operator) {
+		if(memcmp(operator, "+", /*size =*/1L) == 0) return OP_ADD;
+		if(memcmp(operator, "-", /*size =*/1L) == 0) return OP_SUBSTRACT;
+		if(memcmp(operator, "*", /*size =*/1L) == 0) return OP_MULTIPLY;
+		if(memcmp(operator, "/", /*size =*/1L) == 0) return OP_DIVIDE;
+		CHECK(/*condition = */false, "Uknown operator!");
+}
+
 static void equality() {
 		comparison();
 		while(matchAndEatToken(TOKEN_EQUAL_EQUAL) || matchAndEatToken(TOKEN_BANG_EQUAL)) {
 				char *operator = parser.previous->lexeme;
 				comparison();
-				printf("%s\n", operator);
+				writeByteArray(&vm.code, opCodeOf(operator));
 		}
 }
 
@@ -71,7 +83,7 @@ static void comparison() {
 		{
 				char *operator = parser.previous->lexeme;
 				term();
-				printf("%s\n", operator);
+				writeByteArray(&vm.code, opCodeOf(operator));
 		}
 }
 
@@ -80,7 +92,7 @@ static void term() {
 		while(matchAndEatToken(TOKEN_PLUS) || matchAndEatToken(TOKEN_MINUS)) {
 				char *operator = parser.previous->lexeme;
 				factor();
-				printf("%s\n", operator);
+				writeByteArray(&vm.code, opCodeOf(operator));
 		}
 }
 
@@ -89,7 +101,7 @@ static void factor() {
 		while(matchAndEatToken(TOKEN_STAR) || matchAndEatToken(TOKEN_SLASH)) {
 				char *operator = parser.previous->lexeme;
 				primary();
-				printf("%s\n", operator);
+				writeByteArray(&vm.code, opCodeOf(operator));
 		}
 }
 
@@ -99,7 +111,11 @@ static void primary() {
 				eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the expression");
 		}
 		else if(matchAndEatToken(TOKEN_NUMBER)) {
-				printf("%s\n", parser.previous->lexeme);
+				double number = strtod(parser.previous->lexeme, /*endPtr = */ NULL);
+				Value value = CREATE_NUMBER(number);
+				int pos_on_value_array = writeValueArray(&vm.value_array, value); 
+				writeByteArray(&vm.code, OP_VALUE);
+				writeByteArray(&vm.code, pos_on_value_array);
 		}
 		else if(matchAndEatToken(TOKEN_STRING)) {
 				printf("%s\n", parser.previous->lexeme);
