@@ -58,6 +58,7 @@ struct Token {
 };
 void initToken(Token *token);
 void freeToken(Token *token);
+void tokenEquals(Token *token_a, Token *token_b);
 
 struct TokenizerArray {
 		int count;

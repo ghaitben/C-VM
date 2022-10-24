@@ -76,6 +76,11 @@ void freeToken(Token *token) {
 		initToken(token);
 }
 
+void tokenEquals(Token *token_a, Token *token_b) {
+		return strcmp(token_a->lexeme, token_b->lexeme) == 0 && 
+				token_a->type == token_b->type;
+}
+
 void initTokenizer(Tokenizer *tokenizer) {
 		tokenizer->start = 0;
 		tokenizer->current = 0;
