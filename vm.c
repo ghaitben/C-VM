@@ -113,6 +113,24 @@ void decode() {
 		}
 }
 
+static void notHandler() {
+		CHECK(vm.stack_top > 0, "Trying to access an element from an Empty Stack!");
+		Value *top = &vm.stack[vm.stack_top - 1];
+
+		CHECK(IS_BOOLEAN(*top), "Operand of '!' operator must be a boolean!");
+		top->as.boolean = !(top->as.boolean);
+		vm.ip++;
+}
+
+static void negateHandler() {
+		CHECK(vm.stack_top > 0, "Trying to access an element from an Empty Stack!");
+		Value *top = &vm.stack[vm.stack_top - 1];
+
+		CHECK(IS_NUMBER(*top), "Operand of '-' operator must be a number!");
+		top->as.number = -(top->as.number);
+		vm.ip++;
+}
+
 static void decodeInstruction(OpCode op) {
 		switch(op) {
 				case OP_ADD:
@@ -147,6 +165,12 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_BANG_EQUAL:
 						bangEqualHandler();
+						break;
+				case OP_NOT:
+						notHandler();
+						break;
+				case OP_NEGATE:
+						negateHandler();
 						break;
 		}
 }

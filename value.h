@@ -9,9 +9,9 @@
 #define CREATE_BOOLEAN(value) \
 		((Value) {VALUE_TYPE_BOOLEAN, {.boolean = value}})
 
-#define IS_NUMBER(value) (value.type == VALUE_TYPE_NUMBER)
+#define IS_NUMBER(value) ((value).type == VALUE_TYPE_NUMBER)
 
-#define IS_BOOLEAN(value) (value.type == VALUE_TYPE_BOOLEAN);
+#define IS_BOOLEAN(value) ((value).type == VALUE_TYPE_BOOLEAN)
 
 typedef struct Value Value;
 typedef struct ValueArray ValueArray;

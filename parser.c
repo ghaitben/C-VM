@@ -15,10 +15,12 @@ static void term();
 static void factor();
 static void equality();
 static void primary();
+static void unary();
 static void comparison();
 static bool matchAndEatToken(TokenType type);
 static void eatTokenOrReturnError(TokenType type, const char *message);
 static bool reachedEOF();
+static bool stringEquals();
 
 Parser parser;
 
@@ -56,19 +58,8 @@ static bool matchAndEatToken(TokenType type) {
 		return true;
 }
 
-static OpCode opCodeOf(char *operator) {
-		if(memcmp(operator, "+", /*size =*/1L) == 0) return OP_ADD;
-		if(memcmp(operator, "-", /*size =*/1L) == 0) return OP_SUBSTRACT;
-		if(memcmp(operator, "*", /*size =*/1L) == 0) return OP_MULTIPLY;
-		if(memcmp(operator, "/", /*size =*/1L) == 0) return OP_DIVIDE;
-		if(memcmp(operator, ">", /*size =*/1L) == 0) return OP_GREATER;
-		if(memcmp(operator, "<", /*size =*/1L) == 0) return OP_LESS;
-
-		if(memcmp(operator, ">=", /*size =*/2L) == 0) return OP_GREATER_EQUAL;
-		if(memcmp(operator, "<=", /*size =*/2L) == 0) return OP_LESS_EQUAL;
-		if(memcmp(operator, "==", /*size =*/2L) == 0) return OP_EQUAL_EQUAL;
-		if(memcmp(operator, "!=", /*size =*/2L) == 0) return OP_BANG_EQUAL;
-		CHECK(/*condition = */false, "Uknown operator!");
+static bool stringEquals(char *s, const char *t) {
+		return strcmp(s, t) == 0;
 }
 
 static void expression() {
@@ -80,7 +71,9 @@ static void equality() {
 		while(matchAndEatToken(TOKEN_EQUAL_EQUAL) || matchAndEatToken(TOKEN_BANG_EQUAL)) {
 				char *operator = parser.previous->lexeme;
 				comparison();
-				writeByteArray(&vm.code, opCodeOf(operator));
+
+				if(stringEquals(operator, "==")) writeByteArray(&vm.code, OP_EQUAL_EQUAL);
+				if(stringEquals(operator, "!=")) writeByteArray(&vm.code, OP_BANG_EQUAL);
 		}
 }
 
@@ -91,7 +84,11 @@ static void comparison() {
 		{
 				char *operator = parser.previous->lexeme;
 				term();
-				writeByteArray(&vm.code, opCodeOf(operator));
+
+				if(stringEquals(operator, ">=")) writeByteArray(&vm.code, OP_GREATER_EQUAL);
+				if(stringEquals(operator, "<=")) writeByteArray(&vm.code, OP_LESS_EQUAL);
+				if(stringEquals(operator, ">")) writeByteArray(&vm.code, OP_GREATER);
+				if(stringEquals(operator, "<")) writeByteArray(&vm.code, OP_LESS);
 		}
 }
 
@@ -100,20 +97,34 @@ static void term() {
 		while(matchAndEatToken(TOKEN_PLUS) || matchAndEatToken(TOKEN_MINUS)) {
 				char *operator = parser.previous->lexeme;
 				factor();
-				writeByteArray(&vm.code, opCodeOf(operator));
+				if(stringEquals(operator, "+")) writeByteArray(&vm.code, OP_ADD);
+				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_SUBSTRACT);
 		}
 }
 
 static void factor() {
-		primary();
+		unary();
 		while(matchAndEatToken(TOKEN_STAR) || matchAndEatToken(TOKEN_SLASH)) {
 				char *operator = parser.previous->lexeme;
-				primary();
-				writeByteArray(&vm.code, opCodeOf(operator));
+				unary();
+				if(stringEquals(operator, "*")) writeByteArray(&vm.code, OP_MULTIPLY);
+				if(stringEquals(operator, "/")) writeByteArray(&vm.code, OP_DIVIDE);
 		}
 }
 
+static void unary() {
+		while(matchAndEatToken(TOKEN_BANG) || matchAndEatToken(TOKEN_MINUS)) {
+				char *operator = parser.previous->lexeme;
+				unary();
+				if(stringEquals(operator, "!")) writeByteArray(&vm.code, OP_NOT);
+				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_NEGATE);
+		}
+		primary();
+}
+
 static void primary() {
+		if(reachedEOF()) return;
+
 		if(matchAndEatToken(TOKEN_LEFT_PAREN)) {
 				expression();
 				eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the expression");
@@ -123,12 +134,21 @@ static void primary() {
 				Value value = CREATE_NUMBER(number);
 				int pos_on_value_array = writeValueArray(&vm.value_array, value); 
 				writeByteArray(&vm.code, OP_VALUE);
-				writeByteArray(&vm.code, pos_on_value_array);
+				writeByteArray(&vm.code, (uint8_t) pos_on_value_array);
+		}
+		else if(matchAndEatToken(TOKEN_TRUE)) {
+				bool boolean = stringEquals(parser.previous->lexeme, "true");
+				Value value = CREATE_BOOLEAN(boolean);
+				int pos_on_value_array = writeValueArray(&vm.value_array, value);
+				writeByteArray(&vm.code, OP_VALUE);
+				writeByteArray(&vm.code, (uint8_t) pos_on_value_array);
 		}
 		else if(matchAndEatToken(TOKEN_STRING)) {
 				printf("%s\n", parser.previous->lexeme);
 		}
-		else CHECK(false, "Unknown token");
+		else {
+				CHECK(/*condition = */false, "Unknown Token");
+		}
 }
 
 void parse() {

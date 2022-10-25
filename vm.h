@@ -22,6 +22,7 @@ enum OpCode {
 		OP_ADD,
 		OP_SUBSTRACT,
 		OP_NEGATE,
+		OP_NOT,
 		OP_MULTIPLY,
 		OP_DIVIDE,
 		OP_VALUE,
