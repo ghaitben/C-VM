@@ -6,12 +6,12 @@
 
 #define STACK_MAX 255
 
-#define BINARY_OP(op) \
+#define BINARY_OP(op, value_type) \
 		do { \
 				Value rhs = pop(); \
 				Value lhs = pop(); \
 				CHECK(IS_NUMBER(lhs) && IS_NUMBER(rhs), "Both Operands must be numbers"); \
-				push(CREATE_NUMBER(lhs.as.number op rhs.as.number)); \
+				push(value_type(lhs.as.number op rhs.as.number)); \
 		} while(false)
 
 typedef struct VM VM;
@@ -24,7 +24,13 @@ enum OpCode {
 		OP_NEGATE,
 		OP_MULTIPLY,
 		OP_DIVIDE,
-		OP_VALUE
+		OP_VALUE,
+		OP_LESS,
+		OP_LESS_EQUAL,
+		OP_GREATER,
+		OP_GREATER_EQUAL,
+		OP_EQUAL_EQUAL,
+		OP_BANG_EQUAL
 };
 
 struct ByteArray {
@@ -48,6 +54,7 @@ void initVM(VM *vm);
 void freeVM(VM *vm);
 void push(Value value);
 Value pop();
+void decode();
 
 extern VM vm;
 

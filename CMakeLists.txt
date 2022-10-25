@@ -17,6 +17,9 @@ add_library(Utils
 		
 		value.h
 		value.c
+
+		debug.h
+		debug.c
 		)
 
 add_executable(main main.c)

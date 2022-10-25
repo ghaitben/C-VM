@@ -28,6 +28,7 @@ void initParser(Parser *parser) {
 }
 
 void freeParser(Parser *parser) {
+		initParser(parser);
 }
 
 static void eatTokenOrReturnError(TokenType type, const char *message) {
@@ -55,16 +56,23 @@ static bool matchAndEatToken(TokenType type) {
 		return true;
 }
 
-static void expression() {
-		equality();
-}
-
 static OpCode opCodeOf(char *operator) {
 		if(memcmp(operator, "+", /*size =*/1L) == 0) return OP_ADD;
 		if(memcmp(operator, "-", /*size =*/1L) == 0) return OP_SUBSTRACT;
 		if(memcmp(operator, "*", /*size =*/1L) == 0) return OP_MULTIPLY;
 		if(memcmp(operator, "/", /*size =*/1L) == 0) return OP_DIVIDE;
+		if(memcmp(operator, ">", /*size =*/1L) == 0) return OP_GREATER;
+		if(memcmp(operator, "<", /*size =*/1L) == 0) return OP_LESS;
+
+		if(memcmp(operator, ">=", /*size =*/2L) == 0) return OP_GREATER_EQUAL;
+		if(memcmp(operator, "<=", /*size =*/2L) == 0) return OP_LESS_EQUAL;
+		if(memcmp(operator, "==", /*size =*/2L) == 0) return OP_EQUAL_EQUAL;
+		if(memcmp(operator, "!=", /*size =*/2L) == 0) return OP_BANG_EQUAL;
 		CHECK(/*condition = */false, "Uknown operator!");
+}
+
+static void expression() {
+		equality();
 }
 
 static void equality() {
