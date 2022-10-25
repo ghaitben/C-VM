@@ -12,8 +12,14 @@
 #define CREATE_BOOLEAN(value) \
 		((Value) {VALUE_TYPE_BOOLEAN, {.boolean = value}})
 
+// Creates a Value and initializes its string field with value of type (char *).
+// Value owns the memory of the string field.
+#define CREATE_STRING(value) \
+		((Value) {VALUE_TYPE_STRING, {.string = value}})
+
 #define IS_NUMBER(value) ((value).type == VALUE_TYPE_NUMBER)
 #define IS_BOOLEAN(value) ((value).type == VALUE_TYPE_BOOLEAN)
+#define IS_STRING(value) ((value).type == VALUE_TYPE_STRING)
 
 typedef struct Value Value;
 typedef struct ValueArray ValueArray;
@@ -22,19 +28,23 @@ typedef enum ValueType ValueType;
 // ValueType defines the types supported for this language.
 enum ValueType {
 		VALUE_TYPE_NUMBER,
-		VALUE_TYPE_BOOLEAN
+		VALUE_TYPE_BOOLEAN,
+		VALUE_TYPE_STRING
 };
 
 // Value is the runtime representation of our program's data.
 // Data inside Value can be of any type among the types defined in the enum
 // ValueType.
+// Value owns the memory of heap allocated objects it may have.
 struct Value {
 		ValueType type;
 		union {
 				double number;
 				bool boolean;
+				char *string;
 		} as;
 };
+void freeValue(Value *value);
 
 struct ValueArray {
 		int count;

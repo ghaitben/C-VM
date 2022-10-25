@@ -159,6 +159,26 @@ static void unary() {
 		primary();
 }
 
+static char *dynamicStrCpy(char *s) {
+		// Account for the terminating byte by allocating `strlen(s) + 1` bytes
+		// instead of `strlen(s)`.
+		char *ret = malloc(strlen(s) + 1);
+		CHECK(ret != NULL, "Failed to allocate memory");
+
+		strcpy(ret, s);
+		return ret;
+}
+
+static void removeQuotesFrom(char **s) {
+		size_t size = strlen(*s);
+		CHECK(size > 2, "Trying to remove quotes from a string with less than 2 characters");
+
+		// remove last quote
+		(*s)[size - 1] = '\0';
+		// remove first quote
+		(*s)++;
+}
+
 static void primary() {
 		if(reachedEOF()) return;
 
@@ -185,7 +205,16 @@ static void primary() {
 				writeByteArray(&vm.code, pos_on_value_array);
 		}
 		else if(matchAndEatToken(TOKEN_STRING)) {
-				printf("%s\n", parser.previous->lexeme);
+				// Create a string Value from a copy of the lexeme.
+				// We copy the lexeme because our string_value will outlive the lexeme owned by Token.
+				char *lexeme = parser.previous->lexeme;
+				char *copy_lexeme = dynamicStrCpy(lexeme);
+				removeQuotesFrom(&copy_lexeme);
+
+				Value string_value = CREATE_STRING(copy_lexeme);
+				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, string_value);
+				writeByteArray(&vm.code, OP_VALUE);
+				writeByteArray(&vm.code, pos_on_value_array);
 		}
 		else {
 				CHECK(/*condition = */false, "Unknown Token");

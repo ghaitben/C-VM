@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+void freeValue(Value *value) {
+		if(value->type == VALUE_TYPE_STRING) {
+				free(value->as.string);
+		}
+}
+
 void initValueArray(ValueArray *value_array) {
 		value_array->count = 0;
 		value_array->capacity = 0;
@@ -10,6 +16,10 @@ void initValueArray(ValueArray *value_array) {
 }
 
 void freeValueArray(ValueArray *value_array) {
+		// Free all the values inside the value_array before freeing the value_array itself.
+		for(int i = 0; i < value_array->count; ++i) {
+				freeValue(&value_array->array[i]);
+		}
 		free(value_array->array);
 		initValueArray(value_array);
 }
