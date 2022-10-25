@@ -1,6 +1,7 @@
 #include "value.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 void initValueArray(ValueArray *value_array) {
 		value_array->count = 0;
@@ -13,7 +14,7 @@ void freeValueArray(ValueArray *value_array) {
 		initValueArray(value_array);
 }
 
-int writeValueArray(ValueArray *value_array, Value value) {
+uint8_t writeValueArray(ValueArray *value_array, Value value) {
 		if(value_array->count + 1 > value_array->capacity) {
 				value_array->capacity = value_array->capacity > 0 ? 2 * value_array->capacity : 8;
 				value_array->array = realloc(value_array->array, sizeof(Value) * value_array->capacity);

@@ -6,9 +6,9 @@
 #include <stdlib.h>
 
 /*
- * The macro CHECK works like an aseertion. It will exit the system if the input condition
+ * The macro CHECK works like an assertion. It will exit the system if the input condition
  * is not verified.
- * It also displays the filename and the line number of where the error occured exactly in the code
+ * It also displays the filename and the line number of where the error occured exactly in the code.
  * */
 
 #define CHECK(condition, message) \

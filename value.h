@@ -2,6 +2,7 @@
 #define COMPILER_VALUE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define CREATE_NUMBER(value) \
 		((Value) {VALUE_TYPE_NUMBER, {.number = value}})
@@ -37,6 +38,6 @@ struct ValueArray {
 };
 void initValueArray(ValueArray *value_array);
 void freeValueArray(ValueArray *value_array);
-int writeValueArray(ValueArray *value_array, Value value);
+uint8_t writeValueArray(ValueArray *value_array, Value value);
 
 #endif
