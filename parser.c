@@ -71,7 +71,8 @@ static bool stringEquals(char *s, const char *t) {
 }
 
 /*
- * The functions down below represent the implementation of a recursive descent parser.
+ * The functions down below represent the implementation of a recursive descent parser
+ * for parsing expressions.
  * It is based on the following production rules:
  *
  *   + expression        -->  equality
@@ -205,6 +206,12 @@ static void primary() {
 				writeByteArray(&vm.code, OP_VALUE);
 				writeByteArray(&vm.code, pos_on_value_array);
 		}
+		else if(matchAndEatToken(TOKEN_NIL)) {
+				Value nil_value = CREATE_NIL();
+				uint8_t pos_in_value_array = writeValueArray(&vm.value_array, nil_value);
+				writeByteArray(&vm.code, OP_VALUE);
+				writeByteArray(&vm.code, pos_in_value_array);
+		}
 		else {
 				CHECK(/*condition = */false, "Unknown Token");
 		}
@@ -213,3 +220,5 @@ static void primary() {
 void parse() {
 		expression();
 }
+
+

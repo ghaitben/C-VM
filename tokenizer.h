@@ -3,12 +3,11 @@
 
 #include <stdbool.h>
 
-typedef enum TokenType TokenType;
 typedef struct Token Token;
 typedef struct Tokenizer Tokenizer;
 typedef struct TokenizerArray TokenizerArray;
 
-enum TokenType {
+typedef enum {
   TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
   TOKEN_LEFT_BRACE,  
@@ -49,7 +48,7 @@ enum TokenType {
 	TOKEN_WHILE,
 	TOKEN_UNINITIALIZED,
 	TOKEN_EOF
-};
+} TokenType;
 
 struct Token {
 		/*
