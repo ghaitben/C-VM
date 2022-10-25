@@ -14,6 +14,7 @@ void freeValueArray(ValueArray *value_array) {
 		initValueArray(value_array);
 }
 
+// Grow the array when the number of elements reaches the max capacity of the array.
 uint8_t writeValueArray(ValueArray *value_array, Value value) {
 		if(value_array->count + 1 > value_array->capacity) {
 				value_array->capacity = value_array->capacity > 0 ? 2 * value_array->capacity : 8;
