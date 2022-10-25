@@ -26,10 +26,9 @@
 
 typedef struct VM VM;
 typedef struct ByteArray ByteArray;
-typedef enum OpCode OpCode;
 
 // The operations that our virtual machine can decode and execute.
-enum OpCode {
+typedef enum {
 		OP_ADD,
 		OP_SUBSTRACT,
 		OP_NEGATE,
@@ -43,7 +42,7 @@ enum OpCode {
 		OP_GREATER_EQUAL,
 		OP_EQUAL_EQUAL,
 		OP_BANG_EQUAL
-};
+} OpCode;
 
 // The array where the bytecode will be stored before getting executed.
 // The Bytecode is written to this array in the parsing phase.

@@ -203,9 +203,12 @@ static void createAndPushString() {
 		while(!reachedEOF() && peekChar() != '"') eatChar();
 		CHECK(!reachedEOF(), "Expected closing '\"' for a string literal");
 
+		// Eat the starting '"' of the string.
+		tokenizer.start++;
+		createAndPushToken(TOKEN_STRING);
+
 		// Eat the enclosing '"' of the string literal.
 		eatChar();
-		createAndPushToken(TOKEN_STRING);
 }
 
 static bool isAlpha(char c) {

@@ -169,16 +169,6 @@ static char *dynamicStrCpy(char *s) {
 		return ret;
 }
 
-static void removeQuotesFrom(char **s) {
-		size_t size = strlen(*s);
-		CHECK(size > 2, "Trying to remove quotes from a string with less than 2 characters");
-
-		// remove last quote
-		(*s)[size - 1] = '\0';
-		// remove first quote
-		(*s)++;
-}
-
 static void primary() {
 		if(reachedEOF()) return;
 
@@ -208,8 +198,7 @@ static void primary() {
 				// Create a string Value from a copy of the lexeme.
 				// We copy the lexeme because our string_value will outlive the lexeme owned by Token.
 				char *lexeme = parser.previous->lexeme;
-				char *copy_lexeme = dynamicStrCpy(lexeme);
-				removeQuotesFrom(&copy_lexeme);
+			  char *copy_lexeme = dynamicStrCpy(lexeme);
 
 				Value string_value = CREATE_STRING(copy_lexeme);
 				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, string_value);

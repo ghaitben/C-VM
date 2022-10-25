@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "error.h"
 #include <stdlib.h>
+#include <string.h>
 
 static void decodeInstruction(OpCode op_code);
 
@@ -30,6 +31,7 @@ void initVM(VM *vm) {
 		vm->stack_top = 0;
 		vm->ip = 0;
 		initByteArray(&vm->code);
+		initValueArray(&vm->value_array);
 }
 
 void freeVM(VM *vm) {
@@ -50,7 +52,32 @@ Value pop() {
 }
 
 static void additionHandler() {
-		BINARY_OP(+, CREATE_NUMBER);
+		Value rhs = pop();
+		Value lhs = pop();
+
+		CHECK((IS_NUMBER(lhs) && IS_NUMBER(rhs)) ||
+						(IS_STRING(lhs) && IS_STRING(rhs)), "Both Operands of '+' must be numbers or strings.");
+
+		if(IS_NUMBER(lhs) && IS_NUMBER(rhs)) {
+				push(CREATE_NUMBER(lhs.as.number + rhs.as.number));
+		}
+		else {
+				char *lhs_string = lhs.as.string;
+				char *rhs_string = rhs.as.string;
+				
+				size_t concat_size = strlen(lhs_string) + strlen(rhs_string);
+				char *concat_string = malloc(concat_size + 1);
+
+				memcpy(concat_string, lhs_string, strlen(lhs_string));
+				memcpy(concat_string + strlen(lhs_string), rhs_string, strlen(rhs_string));
+				concat_string[concat_size] = '\0';
+				
+				Value new_value = CREATE_STRING(concat_string);
+				push(new_value);
+				// Push to value array in order for the new value to be freed at the end
+				// of the program.
+				writeValueArray(&vm.value_array, new_value);
+		}
 		vm.ip++;
 }
 
