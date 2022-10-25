@@ -106,13 +106,6 @@ static void bangEqualHandler() {
 		vm.ip++;
 }
 
-void decode() {
-		while(vm.ip < vm.code.count) {
-				uint8_t instruction = vm.code.array[vm.ip];
-				decodeInstruction(instruction);
-		}
-}
-
 static void notHandler() {
 		CHECK(vm.stack_top > 0, "Trying to access an element from an Empty Stack!");
 		Value *top = &vm.stack[vm.stack_top - 1];
@@ -131,6 +124,11 @@ static void negateHandler() {
 		vm.ip++;
 }
 
+// This is where our virtual machine will spend most of its time.
+// Our VM first reads the instruction from the array `code` (field in the VM struct), 
+// and then tries to decode it by executing this function.
+// Each operation/instruction has a specific handler that takes care of modifying the state of 
+// the stack and incrementing our VM's instruction pointer `vm.ip`.
 static void decodeInstruction(OpCode op) {
 		switch(op) {
 				case OP_ADD:
@@ -172,5 +170,12 @@ static void decodeInstruction(OpCode op) {
 				case OP_NEGATE:
 						negateHandler();
 						break;
+		}
+}
+
+void decode() {
+		while(vm.ip < vm.code.count) {
+				uint8_t instruction = vm.code.array[vm.ip];
+				decodeInstruction(instruction);
 		}
 }

@@ -4,8 +4,18 @@
 #include "value.h"
 #include <stdint.h>
 
+// The size of the stack of our virtual machine.
 #define STACK_MAX 255
 
+/*
+ * This macro performs a binary operation using the operator `op` and
+ * pushes the result into the stack. The type of the result is based on the parameter 
+ * `value_type`.
+ * The macro is wrapped around a do while loop (that executes once) in order to avoid any 
+ * scoping problems and other obscure bugs.
+ * We check whether the two operands of the operator `op` are numbers, otherwise we report an error
+ * and exit the system.
+ * */
 #define BINARY_OP(op, value_type) \
 		do { \
 				Value rhs = pop(); \
@@ -18,6 +28,7 @@ typedef struct VM VM;
 typedef struct ByteArray ByteArray;
 typedef enum OpCode OpCode;
 
+// The operations that our virtual machine can decode and execute.
 enum OpCode {
 		OP_ADD,
 		OP_SUBSTRACT,
@@ -34,6 +45,8 @@ enum OpCode {
 		OP_BANG_EQUAL
 };
 
+// The array where the bytecode will be stored before getting executed.
+// The Bytecode is written to this array in the parsing phase.
 struct ByteArray {
 		int count;
 		int capacity;
@@ -43,6 +56,7 @@ void initByteArray(ByteArray *byte_array);
 void freeByteArray(ByteArray *byte_array);
 void writeByteArray(ByteArray *byte_array, uint8_t byte);
 
+// There will be one global instance of the virtual machine throughout the whole process.
 struct VM {
 		Value stack[STACK_MAX];
 		int stack_top;
@@ -53,8 +67,13 @@ struct VM {
 
 void initVM(VM *vm);
 void freeVM(VM *vm);
+// Push a value onto the stack of our virtual machine
 void push(Value value);
+// Pops the last value pushed into the stack of our virtual machine and
+// returns it.
 Value pop();
+
+// Interpret the bytecode written in the ByteArray.
 void decode();
 
 extern VM vm;
