@@ -49,6 +49,7 @@ typedef enum {
 		OP_SET,
 		OP_GET,
 		OP_LESS_EQUAL,
+		OP_POP,
 		OP_GREATER,
 		OP_GREATER_EQUAL,
 		OP_EQUAL_EQUAL,

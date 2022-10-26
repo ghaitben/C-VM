@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "debug.h"
 #include "error.h"
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +50,9 @@ void push(Value value) {
 }
 
 Value pop() {
+		if(vm.stack_top == 0) {
+				printCode(&vm.code);
+		}
 		CHECK(vm.stack_top > 0, "Trying to pop an element from an empty Stack!");
 		vm.stack_top--;
 		return vm.stack[vm.stack_top];
@@ -249,6 +253,10 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_ASSIGN:
 						assignHandler();
+						break;
+				case OP_POP:
+						pop();
+						vm.ip++;
 						break;
 		}
 }

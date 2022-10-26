@@ -114,6 +114,7 @@ static void assignment() {
 
 		char *lexeme = dynamicStrCpy(parser.previous->lexeme);
 		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
+				writeByteArray(&vm.code, OP_POP);
 				assignment();
 
 				writeByteArray(&vm.code, OP_ASSIGN);
