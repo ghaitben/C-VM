@@ -101,6 +101,11 @@ void insertHashTable(HashTable *hash_table, Entry entry) {
 		else {
 				int index = hash(entry.key) % hash_table->capacity;
 				entry.key = dynamicStrCpy(entry.key);
+
+				if(entry.value.type == VALUE_TYPE_STRING) {
+						entry.value.as.string = dynamicStrCpy(entry.value.as.string);
+				}
+
 				writeEntryArray(&hash_table->table[index], entry);
 		}
 		hash_table->count++;

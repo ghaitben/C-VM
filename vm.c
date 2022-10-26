@@ -4,6 +4,7 @@
 #include <string.h>
 
 static void decodeInstruction(OpCode op_code);
+static void getHandler();
 
 VM vm;
 
@@ -32,11 +33,13 @@ void initVM(VM *vm) {
 		vm->ip = 0;
 		initByteArray(&vm->code);
 		initValueArray(&vm->value_array);
+		initHashTable(&vm->table);
 }
 
 void freeVM(VM *vm) {
 		freeByteArray(&vm->code);
 		freeValueArray(&vm->value_array);
+		freeHashTable(&vm->table);
 		initVM(vm);
 }
 
@@ -151,6 +154,33 @@ static void negateHandler() {
 		vm.ip++;
 }
 
+static void setHandler() {
+		vm.ip++;
+		valueHandler();
+
+		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
+						"variable identifier is not a string");
+		char *identifier = pop().as.string;
+		Value value = pop();
+		
+		Entry e = {.key = identifier, .value = value};
+
+		insertHashTable(&vm.table, e);
+}
+
+static void getHandler() {
+		vm.ip++;
+		valueHandler();
+
+		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
+						"variable identifier is not a string");
+		char *key = pop().as.string;
+
+		Entry *e = keyExists(&vm.table, key);
+		CHECK(e != NULL, "Unknown identifier");
+		push(e->value);
+}
+
 // This is where our virtual machine will spend most of its time.
 // Our VM first reads the instruction from the array `code` (field in the VM struct), 
 // and then tries to decode it by executing this function.
@@ -196,6 +226,12 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_NEGATE:
 						negateHandler();
+						break;
+				case OP_SET:
+						setHandler();
+						break;
+				case OP_GET:
+						getHandler();
 						break;
 		}
 }

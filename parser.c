@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "error.h"
 #include "value.h"
+#include "debug.h"
 #include "vm.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -18,6 +19,10 @@ static void equality();
 static void primary();
 static void unary();
 static void comparison();
+static void declaration();
+static void statement();
+static void varDeclaration();
+static void funDeclaration();
 static bool matchAndEatToken(TokenType type);
 static void eatTokenOrReturnError(TokenType type, const char *message);
 static bool reachedEOF();
@@ -183,42 +188,72 @@ static void primary() {
 		// This is why the variable `pos_on_value_array` is of type uint8_t.
 		else if(matchAndEatToken(TOKEN_NUMBER)) {
 				double number = strtod(parser.previous->lexeme, /*endPtr = */ NULL);
-				Value value = CREATE_NUMBER(number);
-				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, value); 
-				writeByteArray(&vm.code, OP_VALUE);
-				writeByteArray(&vm.code, pos_on_value_array);
+				WRITE_VALUE(CREATE_NUMBER, number);
 		}
 		else if(matchAndEatToken(TOKEN_TRUE) || matchAndEatToken(TOKEN_FALSE)) {
 				bool boolean = stringEquals(parser.previous->lexeme, "true");
-				Value value = CREATE_BOOLEAN(boolean);
-				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, value);
-				writeByteArray(&vm.code, OP_VALUE);
-				writeByteArray(&vm.code, pos_on_value_array);
+				WRITE_VALUE(CREATE_BOOLEAN, boolean);
 		}
 		else if(matchAndEatToken(TOKEN_STRING)) {
 				// Create a string Value from a copy of the lexeme.
 				// We copy the lexeme because our string_value will outlive the lexeme owned by Token.
-				char *lexeme = parser.previous->lexeme;
-			  char *copy_lexeme = dynamicStrCpy(lexeme);
-
-				Value string_value = CREATE_STRING(copy_lexeme);
-				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, string_value);
-				writeByteArray(&vm.code, OP_VALUE);
-				writeByteArray(&vm.code, pos_on_value_array);
+			  char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
+				WRITE_VALUE(CREATE_STRING, copy_lexeme);
 		}
 		else if(matchAndEatToken(TOKEN_NIL)) {
-				Value nil_value = CREATE_NIL();
-				uint8_t pos_in_value_array = writeValueArray(&vm.value_array, nil_value);
-				writeByteArray(&vm.code, OP_VALUE);
-				writeByteArray(&vm.code, pos_in_value_array);
+				WRITE_VALUE(CREATE_NIL);
+		}
+		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
+				char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
+				writeByteArray(&vm.code, OP_GET);
+				WRITE_VALUE(CREATE_STRING, copy_lexeme);
 		}
 		else {
-				CHECK(/*condition = */false, "Unknown Token");
+				// Expected an expression but found something else. We return an error.
+				CHECK(/*condition = */false, "Unexpected token");
 		}
 }
 
 void parse() {
-		expression();
+		while(!reachedEOF()) {
+				declaration();
+		}
 }
 
+static void declaration() {
+		if(matchAndEatToken(TOKEN_VAR)) {
+				varDeclaration();
+		}
+		else if(matchAndEatToken(TOKEN_FUN)) {
+				funDeclaration();
+		}
+		else {
+				statement();
+		}
+}
 
+static void varDeclaration() {
+		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
+
+		char *identifier = dynamicStrCpy(parser.previous->lexeme);
+
+		if(matchAndEatToken(TOKEN_EQUAL)) {
+				expression();
+		}
+		else {
+				WRITE_VALUE(CREATE_NIL);
+		}
+
+		writeByteArray(&vm.code, OP_SET);
+		WRITE_VALUE(CREATE_STRING, identifier);
+
+		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after var declaration");
+}
+
+static void funDeclaration() {
+
+}
+
+static void statement() {
+
+}

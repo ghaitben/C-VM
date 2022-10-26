@@ -1,0 +1,3 @@
+var a = "ghait";
+var e = " ben cheikh";
+var z = a + e;

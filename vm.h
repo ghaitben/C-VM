@@ -2,6 +2,7 @@
 #define COMPILER_VM_H
 
 #include "value.h"
+#include "hash_table.h"
 #include <stdint.h>
 
 // The size of the stack of our virtual machine.
@@ -24,6 +25,13 @@
 				push(value_type(lhs.as.number op rhs.as.number)); \
 		} while(false)
 
+#define WRITE_VALUE(value_type, ...) \
+		do { \
+				writeByteArray(&vm.code, OP_VALUE); \
+				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, value_type(__VA_ARGS__)); \
+				writeByteArray(&vm.code, pos_on_value_array); \
+		}while(false)
+
 typedef struct VM VM;
 typedef struct ByteArray ByteArray;
 
@@ -37,6 +45,8 @@ typedef enum {
 		OP_DIVIDE,
 		OP_VALUE,
 		OP_LESS,
+		OP_SET,
+		OP_GET,
 		OP_LESS_EQUAL,
 		OP_GREATER,
 		OP_GREATER_EQUAL,
@@ -62,6 +72,7 @@ struct VM {
 		int ip;
 		ByteArray code;
 		ValueArray value_array;
+		HashTable table;
 };
 
 void initVM(VM *vm);
