@@ -181,6 +181,20 @@ static void getHandler() {
 		push(e->value);
 }
 
+static void assignHandler() {
+		vm.ip++;
+		valueHandler();
+
+		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
+						"variable identifier is not a string");
+		char *identifier = pop().as.string;
+
+		Entry *e = keyExists(&vm.table, identifier);
+		CHECK(e != NULL, "Unknown identifier");
+		
+		e->value = pop(); // Should leave the value on the stack
+}
+
 // This is where our virtual machine will spend most of its time.
 // Our VM first reads the instruction from the array `code` (field in the VM struct), 
 // and then tries to decode it by executing this function.
@@ -232,6 +246,9 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_GET:
 						getHandler();
+						break;
+				case OP_ASSIGN:
+						assignHandler();
 						break;
 		}
 }

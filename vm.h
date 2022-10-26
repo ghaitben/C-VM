@@ -43,6 +43,7 @@ typedef enum {
 		OP_NOT,
 		OP_MULTIPLY,
 		OP_DIVIDE,
+		OP_ASSIGN,
 		OP_VALUE,
 		OP_LESS,
 		OP_SET,

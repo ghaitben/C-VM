@@ -13,12 +13,13 @@
 static Token *eatToken();
 static Token *peekToken();
 static void expression();
-static void term();
-static void factor();
-static void equality();
-static void primary();
-static void unary();
-static void comparison();
+static bool term();
+static bool factor();
+static bool equality();
+static bool primary();
+static bool unary();
+static bool comparison();
+static void assignment();
 static void declaration();
 static void statement();
 static void varDeclaration();
@@ -27,6 +28,7 @@ static bool matchAndEatToken(TokenType type);
 static void eatTokenOrReturnError(TokenType type, const char *message);
 static bool reachedEOF();
 static bool stringEquals();
+static char *dynamicStrCpy(char *s);
 
 Parser parser;
 
@@ -80,7 +82,9 @@ static bool stringEquals(char *s, const char *t) {
  * for parsing expressions.
  * It is based on the following production rules:
  *
- *   + expression        -->  equality
+ *   + expression        -->  assignment
+ *
+ *   + assignment        -->  equality ( '=' ) assignment
  *
  *   + equality          -->  comparison | comparison ( '==' | '!=' ) comparison
  *
@@ -98,12 +102,35 @@ static bool stringEquals(char *s, const char *t) {
  * */
 
 static void expression() {
-		equality();
+		assignment();
 }
 
-static void equality() {
-		comparison();
+static void assignment() {
+		bool can_assign = equality();
+		
+		if(!can_assign && peekToken()->type == TOKEN_EQUAL) {
+				CHECK(false, "Invalid assignment target");
+		}
+
+		char *lexeme = dynamicStrCpy(parser.previous->lexeme);
+		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
+				assignment();
+
+				writeByteArray(&vm.code, OP_ASSIGN);
+				WRITE_VALUE(CREATE_STRING, lexeme);
+
+				eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected a ';' at the end of the assignment");
+		}
+		else {
+				free(lexeme);
+		}
+}
+
+static bool equality() {
+		bool can_assign = comparison();
 		while(matchAndEatToken(TOKEN_EQUAL_EQUAL) || matchAndEatToken(TOKEN_BANG_EQUAL)) {
+				can_assign = false;
+
 				char *operator = parser.previous->lexeme;
 				comparison();
 
@@ -111,13 +138,16 @@ static void equality() {
 				if(stringEquals(operator, "==")) writeByteArray(&vm.code, OP_EQUAL_EQUAL);
 				if(stringEquals(operator, "!=")) writeByteArray(&vm.code, OP_BANG_EQUAL);
 		}
+		return can_assign;
 }
 
-static void comparison() {
-		term();
+static bool comparison() {
+		bool can_assign = term();
 		while(matchAndEatToken(TOKEN_LESS_EQUAL) || matchAndEatToken(TOKEN_LESS) || 
 						matchAndEatToken(TOKEN_GREATER) || matchAndEatToken(TOKEN_GREATER_EQUAL))
 		{
+				can_assign = false;
+
 				char *operator = parser.previous->lexeme;
 				term();
 
@@ -127,11 +157,14 @@ static void comparison() {
 				if(stringEquals(operator, ">")) writeByteArray(&vm.code, OP_GREATER);
 				if(stringEquals(operator, "<")) writeByteArray(&vm.code, OP_LESS);
 		}
+		return can_assign;
 }
 
-static void term() {
-		factor();
+static bool term() {
+		bool can_assign = factor();
 		while(matchAndEatToken(TOKEN_PLUS) || matchAndEatToken(TOKEN_MINUS)) {
+				can_assign = false;
+
 				char *operator = parser.previous->lexeme;
 				factor();
 
@@ -139,11 +172,14 @@ static void term() {
 				if(stringEquals(operator, "+")) writeByteArray(&vm.code, OP_ADD);
 				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_SUBSTRACT);
 		}
+		return can_assign;
 }
 
-static void factor() {
-		unary();
+static bool factor() {
+		bool can_assign = unary();
 		while(matchAndEatToken(TOKEN_STAR) || matchAndEatToken(TOKEN_SLASH)) {
+				can_assign = false;
+
 				char *operator = parser.previous->lexeme;
 				unary();
 
@@ -151,10 +187,14 @@ static void factor() {
 				if(stringEquals(operator, "*")) writeByteArray(&vm.code, OP_MULTIPLY);
 				if(stringEquals(operator, "/")) writeByteArray(&vm.code, OP_DIVIDE);
 		}
+		return can_assign;
 }
 
-static void unary() {
+static bool unary() {
+		bool can_assign = true;
 		while(matchAndEatToken(TOKEN_BANG) || matchAndEatToken(TOKEN_MINUS)) {
+				can_assign = false;
+
 				char *operator = parser.previous->lexeme;
 				unary();
 
@@ -162,7 +202,7 @@ static void unary() {
 				if(stringEquals(operator, "!")) writeByteArray(&vm.code, OP_NOT);
 				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_NEGATE);
 		}
-		primary();
+		return can_assign && primary();
 }
 
 static char *dynamicStrCpy(char *s) {
@@ -175,13 +215,14 @@ static char *dynamicStrCpy(char *s) {
 		return ret;
 }
 
-static void primary() {
-		if(reachedEOF()) return;
+static bool primary() {
+		if(reachedEOF()) return false;
 
 		// Actions associated with the terminal tokens.
 		if(matchAndEatToken(TOKEN_LEFT_PAREN)) {
 				expression();
 				eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the expression");
+				return false;
 		}
 		// We currently can't handle more than 255 values in our program because we only use one byte
 		// to encode the position of our value in the value_array of the virtual machine.
@@ -189,28 +230,35 @@ static void primary() {
 		else if(matchAndEatToken(TOKEN_NUMBER)) {
 				double number = strtod(parser.previous->lexeme, /*endPtr = */ NULL);
 				WRITE_VALUE(CREATE_NUMBER, number);
+				return false;
 		}
 		else if(matchAndEatToken(TOKEN_TRUE) || matchAndEatToken(TOKEN_FALSE)) {
 				bool boolean = stringEquals(parser.previous->lexeme, "true");
 				WRITE_VALUE(CREATE_BOOLEAN, boolean);
+				return false;
 		}
 		else if(matchAndEatToken(TOKEN_STRING)) {
 				// Create a string Value from a copy of the lexeme.
 				// We copy the lexeme because our string_value will outlive the lexeme owned by Token.
 			  char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
 				WRITE_VALUE(CREATE_STRING, copy_lexeme);
+				return false;
 		}
 		else if(matchAndEatToken(TOKEN_NIL)) {
 				WRITE_VALUE(CREATE_NIL);
+				return false;
 		}
 		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
 				char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
 				writeByteArray(&vm.code, OP_GET);
 				WRITE_VALUE(CREATE_STRING, copy_lexeme);
+				return true;
 		}
 		else {
 				// Expected an expression but found something else. We return an error.
+				printf("%s\n", tokenizer.token_array.array[parser.current].lexeme);
 				CHECK(/*condition = */false, "Unexpected token");
+				return false;
 		}
 }
 
@@ -228,7 +276,7 @@ static void declaration() {
 				funDeclaration();
 		}
 		else {
-				statement();
+				expression();
 		}
 }
 

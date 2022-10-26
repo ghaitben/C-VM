@@ -17,8 +17,8 @@ void initEntryArray(EntryArray *entry_array) {
 }
 
 void freeEntryArray(EntryArray *entry_array) {
-		for(int i = 0; i < entry_array->count; ++i) {
-				freeValue(&entry_array->array[i].value);
+		for(int r = 0; r < entry_array->count; ++r) {
+				free(entry_array->array[r].key);
 		}
 		free(entry_array->array);
 		initEntryArray(entry_array);
@@ -42,12 +42,7 @@ void initHashTable(HashTable *hash_table) {
 
 void freeHashTable(HashTable *hash_table) {
 		for(int c = 0; c < hash_table->capacity; ++c) {
-				EntryArray *entry_array = &hash_table->table[c];
-				
-				for(int r = 0; r < entry_array->count; ++r) {
-						free(entry_array->array[r].key);
-				}
-				freeEntryArray(entry_array);
+				freeEntryArray(&hash_table->table[c]);
 		}
 		free(hash_table->table);
 		initHashTable(hash_table);
@@ -101,11 +96,6 @@ void insertHashTable(HashTable *hash_table, Entry entry) {
 		else {
 				int index = hash(entry.key) % hash_table->capacity;
 				entry.key = dynamicStrCpy(entry.key);
-
-				if(entry.value.type == VALUE_TYPE_STRING) {
-						entry.value.as.string = dynamicStrCpy(entry.value.as.string);
-				}
-
 				writeEntryArray(&hash_table->table[index], entry);
 		}
 		hash_table->count++;
@@ -121,7 +111,6 @@ bool deleteHashTable(HashTable *hash_table, char *key) {
 		while(strcmp(entry_array->array[r].key, key)) r++;
 		
 		free(entry_array->array[r].key);
-		freeValue(&entry_array->array[r].value);
 		entry_array->array[r].key = entry_array->array[entry_array->count - 1].key;
 		entry_array->array[r].value = entry_array->array[entry_array->count -1].value;
 

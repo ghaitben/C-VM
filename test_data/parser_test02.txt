@@ -1,3 +1,7 @@
 var a = "ghait";
 var e = " ben cheikh";
 var z = a + e;
+
+a = "alhamdolilah";
+e = " lahoma laka chokr";
+z = a + e;
