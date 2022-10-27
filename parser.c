@@ -114,7 +114,6 @@ static void assignment() {
 
 		char *lexeme = dynamicStrCpy(parser.previous->lexeme);
 		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
-				writeByteArray(&vm.code, OP_POP);
 				assignment();
 
 				writeByteArray(&vm.code, OP_ASSIGN);
@@ -250,6 +249,15 @@ static bool primary() {
 				return false;
 		}
 		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
+				// Check if equal is on the right hand side of the identifier.
+				int idx = parser.current;
+				while(idx < tokenizer.token_array.count && 
+								tokenizer.token_array.array[idx].type != TOKEN_SEMICOLON)
+				{
+						if(tokenizer.token_array.array[idx].type == TOKEN_EQUAL) return true;
+						idx++;
+				}
+
 				char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
 				writeByteArray(&vm.code, OP_GET);
 				WRITE_VALUE(CREATE_STRING, copy_lexeme);
@@ -284,7 +292,9 @@ static void declaration() {
 static void varDeclaration() {
 		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
 
-		char *identifier = dynamicStrCpy(parser.previous->lexeme);
+		Local *local = &vm.locals[vm.local_top++];
+		local->name = dynamicStrCpy(parser.previous->lexeme);
+		local->scope = vm.scope;
 
 		if(matchAndEatToken(TOKEN_EQUAL)) {
 				expression();
@@ -292,9 +302,6 @@ static void varDeclaration() {
 		else {
 				WRITE_VALUE(CREATE_NIL);
 		}
-
-		writeByteArray(&vm.code, OP_SET);
-		WRITE_VALUE(CREATE_STRING, identifier);
 
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after var declaration");
 }

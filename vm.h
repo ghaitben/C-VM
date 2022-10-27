@@ -67,14 +67,22 @@ void initByteArray(ByteArray *byte_array);
 void freeByteArray(ByteArray *byte_array);
 void writeByteArray(ByteArray *byte_array, uint8_t byte);
 
+typedef struct {
+		char *name;
+		int scope;
+} Local;
+
 // There will be one global instance of the virtual machine throughout the whole process.
 struct VM {
 		Value stack[STACK_MAX];
+		Local locals[STACK_MAX];
 		int stack_top;
+		int local_top;
 		int ip;
 		ByteArray code;
 		ValueArray value_array;
 		HashTable table;
+		int scope;
 };
 
 void initVM(VM *vm);

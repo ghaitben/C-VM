@@ -41,6 +41,9 @@ void freeVM(VM *vm) {
 		freeByteArray(&vm->code);
 		freeValueArray(&vm->value_array);
 		freeHashTable(&vm->table);
+		for(int i = 0; i < vm->local_top; ++i) {
+				free(vm->locals[i].name);
+		}
 		initVM(vm);
 }
 
@@ -180,9 +183,15 @@ static void getHandler() {
 						"variable identifier is not a string");
 		char *key = pop().as.string;
 
-		Entry *e = keyExists(&vm.table, key);
-		CHECK(e != NULL, "Unknown identifier");
-		push(e->value);
+		for(int i = vm.local_top - 1; i >= 0; --i) {
+				Local *local = &vm.locals[i];
+				if(strcmp(local->name, key)) continue;
+
+				push(vm.stack[i]);
+				return;
+		}
+		CHECK(false, "Unknown identifier");
+
 }
 
 static void assignHandler() {
@@ -193,10 +202,14 @@ static void assignHandler() {
 						"variable identifier is not a string");
 		char *identifier = pop().as.string;
 
-		Entry *e = keyExists(&vm.table, identifier);
-		CHECK(e != NULL, "Unknown identifier");
-		
-		e->value = pop(); // Should leave the value on the stack
+		for(int i = vm.local_top - 1; i >= 0; --i) {
+				Local *local = &vm.locals[i];
+				if(strcmp(local->name, identifier)) continue;
+
+				vm.stack[i] = pop();
+				return;
+		}
+		CHECK(false, "Unknown identifier");
 }
 
 // This is where our virtual machine will spend most of its time.
