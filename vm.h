@@ -40,6 +40,8 @@ typedef enum {
 		OP_ADD,
 		OP_SUBSTRACT,
 		OP_NEGATE,
+		OP_JUMP_IF_FALSE,
+		OP_JUMP,
 		OP_NOT,
 		OP_MULTIPLY,
 		OP_DIVIDE,

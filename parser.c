@@ -26,6 +26,7 @@ static void expressionStatement();
 static void block();
 static void varDeclaration();
 static void funDeclaration();
+static void ifStatement();
 static bool matchAndEatToken(TokenType type);
 static void eatTokenOrReturnError(TokenType type, const char *message);
 static bool reachedEOF();
@@ -316,6 +317,39 @@ static void expressionStatement() {
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' at the end of the expression");
 }
 
+static int setCheckPoint(OpCode op_code) {
+		writeByteArray(&vm.code, op_code);
+		writeByteArray(&vm.code, 0xff);
+		writeByteArray(&vm.code, 0xff);
+
+		return vm.code.count - 3;
+}
+
+static void setJumpSize(int jump) {
+		int correct_jump_size = vm.code.count - jump;
+
+		vm.code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
+		vm.code.array[jump + 2] = correct_jump_size & 0xff;
+}
+
+static void ifStatement() {
+		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after 'if'");
+		expression();
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after if expression");
+
+		int jump_then = setCheckPoint(OP_JUMP_IF_FALSE);
+		statement();
+		int jump_else = setCheckPoint(OP_JUMP);
+
+		setJumpSize(jump_then);
+
+		if(matchAndEatToken(TOKEN_ELSE)) {
+				statement();
+		}
+		setJumpSize(jump_else);
+
+}
+
 static void block() {
 		vm.scope++;
 		while(!reachedEOF() && !(peekToken()->type == TOKEN_RIGHT_BRACE)) {
@@ -328,6 +362,9 @@ static void block() {
 static void statement() {
 		if(matchAndEatToken(TOKEN_LEFT_BRACE)) {
 				block();
+		}
+		else if(matchAndEatToken(TOKEN_IF)) {
+				ifStatement();
 		}
 		else {
 				expressionStatement();

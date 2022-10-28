@@ -215,6 +215,22 @@ static void assignHandler() {
 		CHECK(false, "Unknown identifier");
 }
 
+static bool isTrue(Value value) {
+		if(value.type == VALUE_TYPE_NIL) return false;
+		if(value.type == VALUE_TYPE_BOOLEAN) return value.as.boolean;
+		return true;
+}
+
+static void jumpIfFalseHandler() {
+		uint16_t jump_size = (vm.code.array[vm.ip + 1] << 8) | vm.code.array[vm.ip + 2];
+		vm.ip += isTrue(pop()) ? jump_size : 3;
+}
+
+static void jumpHandler() {
+		uint16_t jump_size = (vm.code.array[vm.ip + 1] << 8) | vm.code.array[vm.ip + 2];
+		vm.ip += jump_size;
+}
+
 // This is where our virtual machine will spend most of its time.
 // Our VM first reads the instruction from the array `code` (field in the VM struct), 
 // and then tries to decode it by executing this function.
@@ -273,6 +289,12 @@ static void decodeInstruction(OpCode op) {
 				case OP_POP:
 						pop();
 						vm.ip++;
+						break;
+				case OP_JUMP_IF_FALSE:
+						jumpIfFalseHandler();
+						break;
+				case OP_JUMP:
+						jumpHandler();
 						break;
 		}
 }
