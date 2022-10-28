@@ -329,6 +329,11 @@ static void declaration() {
 static void varDeclaration() {
 		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
 
+		for(int i = vm.local_top - 1; i >= 0 && vm.locals[i].scope == vm.scope; --i) {
+				if(strcmp(vm.locals[i].name, parser.previous->lexeme)) continue;
+				CHECK(false, "Variable already defined");
+		}
+
 		Local *local = &vm.locals[vm.local_top++];
 		local->name = dynamicStrCpy(parser.previous->lexeme);
 		local->scope = vm.scope;
