@@ -20,6 +20,7 @@ static bool primary();
 static bool unary();
 static bool comparison();
 static bool and();
+static bool or();
 static void assignment();
 static void declaration();
 static void statement();
@@ -90,9 +91,11 @@ static bool stringEquals(char *s, const char *t) {
  *
  *   + expression        -->  assignment
  *
- *   + assignment        -->  and ( '=' ) assignment
+ *   + assignment        -->  or ( '=' ) assignment
  *
- *   + and               --> equality 'and' assignment
+ *   + or                --> and 'or' assignment
+ *
+ *   + and               -->  equality 'and' assignment
  *
  *   + equality          -->  comparison | comparison ( '==' | '!=' ) comparison
  *
@@ -114,7 +117,7 @@ static void expression() {
 }
 
 static void assignment() {
-		bool can_assign = and();
+		bool can_assign = or();
 		
 		if(!can_assign && peekToken()->type == TOKEN_EQUAL) {
 				CHECK(false, "Invalid assignment target");
@@ -130,6 +133,23 @@ static void assignment() {
 		else {
 				free(lexeme);
 		}
+}
+
+static bool or() {
+		bool can_assign = and();
+		
+		if(matchAndEatToken(TOKEN_OR)) {
+				can_assign = false;
+
+				int next_operand_jump = setCheckPoint(OP_JUMP_IF_FALSE);
+				int exit_jump = setCheckPoint(OP_JUMP);
+				setJumpSize(next_operand_jump);
+				assignment();
+
+				setJumpSize(exit_jump);
+		}
+		return can_assign;
+
 }
 
 static bool and() {
