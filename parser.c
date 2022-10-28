@@ -19,6 +19,7 @@ static bool equality();
 static bool primary();
 static bool unary();
 static bool comparison();
+static bool and();
 static void assignment();
 static void declaration();
 static void statement();
@@ -29,6 +30,8 @@ static void funDeclaration();
 static void ifStatement();
 static bool matchAndEatToken(TokenType type);
 static void eatTokenOrReturnError(TokenType type, const char *message);
+static int setCheckPoint(OpCode op_code);
+static void setJumpSize(int jump);
 static bool reachedEOF();
 static bool stringEquals();
 static char *dynamicStrCpy(char *s);
@@ -87,7 +90,9 @@ static bool stringEquals(char *s, const char *t) {
  *
  *   + expression        -->  assignment
  *
- *   + assignment        -->  equality ( '=' ) assignment
+ *   + assignment        -->  and ( '=' ) assignment
+ *
+ *   + and               --> equality 'and' assignment
  *
  *   + equality          -->  comparison | comparison ( '==' | '!=' ) comparison
  *
@@ -109,7 +114,7 @@ static void expression() {
 }
 
 static void assignment() {
-		bool can_assign = equality();
+		bool can_assign = and();
 		
 		if(!can_assign && peekToken()->type == TOKEN_EQUAL) {
 				CHECK(false, "Invalid assignment target");
@@ -125,6 +130,19 @@ static void assignment() {
 		else {
 				free(lexeme);
 		}
+}
+
+static bool and() {
+		bool can_assign = equality();
+
+		if(matchAndEatToken(TOKEN_AND)) {
+				can_assign = false;
+				int exit_jump = setCheckPoint(OP_JUMP_IF_FALSE);
+				assignment();
+				setJumpSize(exit_jump);
+		}
+
+		return can_assign;
 }
 
 static bool equality() {
