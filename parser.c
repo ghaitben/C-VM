@@ -288,14 +288,7 @@ static bool primary() {
 				return false;
 		}
 		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
-				// Check if equal is on the right hand side of the identifier.
-				int idx = parser.current;
-				while(idx < tokenizer.token_array.count && 
-								tokenizer.token_array.array[idx].type != TOKEN_SEMICOLON)
-				{
-						if(tokenizer.token_array.array[idx].type == TOKEN_EQUAL) return true;
-						idx++;
-				}
+				if(peekToken()->type == TOKEN_EQUAL) return true;
 
 				char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
 				writeByteArray(&vm.code, OP_GET);
@@ -401,6 +394,7 @@ static void deleteOutOfScopeVariables() {
 		{
 				writeByteArray(&vm.code, OP_POP);
 				vm.local_top--;
+				free(vm.locals[vm.local_top].name);
 		}
 }
 

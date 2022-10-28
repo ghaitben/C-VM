@@ -161,20 +161,6 @@ static void negateHandler() {
 		vm.ip++;
 }
 
-static void setHandler() {
-		vm.ip++;
-		valueHandler();
-
-		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
-						"variable identifier is not a string");
-		char *identifier = pop().as.string;
-		Value value = pop();
-		
-		Entry e = {.key = identifier, .value = value};
-
-		insertHashTable(&vm.table, e);
-}
-
 static void getHandler() {
 		vm.ip++;
 		valueHandler();
@@ -278,9 +264,6 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_NEGATE:
 						negateHandler();
-						break;
-				case OP_SET:
-						setHandler();
 						break;
 				case OP_GET:
 						getHandler();
