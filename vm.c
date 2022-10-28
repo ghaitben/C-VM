@@ -223,7 +223,7 @@ static bool isTrue(Value value) {
 
 static void jumpIfFalseHandler() {
 		uint16_t jump_size = (vm.code.array[vm.ip + 1] << 8) | vm.code.array[vm.ip + 2];
-		vm.ip += isTrue(pop()) ? jump_size : 3;
+		vm.ip += !isTrue(pop()) ? jump_size : 3;
 }
 
 static void jumpHandler() {
