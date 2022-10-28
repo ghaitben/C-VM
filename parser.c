@@ -30,7 +30,7 @@ static void varDeclaration();
 static void funDeclaration();
 static void ifStatement();
 static bool matchAndEatToken(TokenType type);
-static void eatTokenOrReturnError(TokenType type, const char *message);
+static Token *eatTokenOrReturnError(TokenType type, const char *message);
 static int setCheckPoint(OpCode op_code);
 static void setJumpSize(int jump);
 static bool reachedEOF();
@@ -51,9 +51,9 @@ void freeParser(Parser *parser) {
 
 // Checks whether the current token type matches the types passed in as a parameter.
 // If the types match, it eats the token, otherwise it returns an error and exits the system.
-static void eatTokenOrReturnError(TokenType type, const char *message) {
+static Token *eatTokenOrReturnError(TokenType type, const char *message) {
 		CHECK(!reachedEOF() && peekToken()->type == type, message);
-		eatToken();
+		return eatToken();
 }
 
 // Stores the most recent token in the field `parser.previous` and advances the current index.
@@ -321,6 +321,9 @@ void parse() {
 }
 
 static void declaration() {
+		if(matchAndEatToken(TOKEN_FUN)) {
+				funDeclaration();
+		}
 		if(matchAndEatToken(TOKEN_VAR)) {
 				varDeclaration();
 		}
@@ -343,6 +346,7 @@ static void varDeclaration() {
 
 		Local *local = &vm.locals[vm.local_top++];
 		local->name = dynamicStrCpy(parser.previous->lexeme);
+		// Mark as uninitialized
 		local->scope = -1;
 
 		if(matchAndEatToken(TOKEN_EQUAL)) {
@@ -351,13 +355,13 @@ static void varDeclaration() {
 		else {
 				WRITE_VALUE(CREATE_NIL);
 		}
+		// Mark as initialized
 		local->scope = vm.scope;
 
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after var declaration");
 }
 
 static void funDeclaration() {
-
 }
 
 static void expressionStatement() {

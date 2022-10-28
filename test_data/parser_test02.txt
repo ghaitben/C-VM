@@ -1,6 +1,5 @@
 for(var c = 1; c < 10; c = c + 1) {
     var e = 1;
-		var c = c + 1;
 }
 
 var z = "ghait";
