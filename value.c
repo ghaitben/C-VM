@@ -2,10 +2,29 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include "error.h"
 
 void freeValue(Value *value) {
 		if(value->type == VALUE_TYPE_STRING) {
 				free(value->as.string);
+		}
+}
+
+bool valueEquals(Value *this, Value *other) {
+		if(this->type != other->type) return false;
+		switch(this->type) {
+				case VALUE_TYPE_NIL:
+						 return true;
+				case VALUE_TYPE_STRING:
+						 return strcmp(this->as.string, other->as.string) == 0;
+				case VALUE_TYPE_BOOLEAN:
+						 return this->as.boolean == other->as.boolean;
+		    case VALUE_TYPE_NUMBER:
+						 return this->as.number == other->as.number;
+		    default:
+						 CHECK(false, "Unreachable state");
+						 return false;
 		}
 }
 

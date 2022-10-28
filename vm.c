@@ -161,6 +161,16 @@ static void negateHandler() {
 		vm.ip++;
 }
 
+static void checkReflexiveAssignmentHandler() {
+		for(int i = vm.stack_top - 2; i >= 0; --i) {
+				if(strcmp(vm.locals[i].name, vm.locals[vm.local_top - 1].name)) continue;
+
+				CHECK(!valueEquals(&vm.stack[i], &vm.stack[vm.stack_top - 1]), 
+								"Reflexive assignment not allowed");
+		}
+		vm.ip++;
+}
+
 static void getHandler() {
 		vm.ip++;
 		valueHandler();
@@ -283,6 +293,9 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_JUMP_BACKWARD:
 						jumpBackwardHandler();
+						break;
+				case OP_CHECK_REFLEXIVE_ASSIGNMENT:
+						checkReflexiveAssignmentHandler();
 						break;
 		}
 }

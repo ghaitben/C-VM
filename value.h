@@ -51,6 +51,7 @@ struct Value {
 		} as;
 };
 void freeValue(Value *value);
+bool valueEquals(Value *this, Value *other);
 
 // Array where all the values(i.e strings, numbers, booleans, ....) are stored.
 // All the objects will remain in the array even if they are popped from the stack.

@@ -330,6 +330,7 @@ static void varDeclaration() {
 
 		if(matchAndEatToken(TOKEN_EQUAL)) {
 				expression();
+				writeByteArray(&vm.code, OP_CHECK_REFLEXIVE_ASSIGNMENT);
 		}
 		else {
 				WRITE_VALUE(CREATE_NIL);
