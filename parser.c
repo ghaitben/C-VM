@@ -423,6 +423,49 @@ static void whileStatement() {
 		setBackWardJumpSize(go_back, loop_start);
 }
 
+static void forStatement() {
+		vm.scope++;
+		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after for statement");
+
+		// Init
+		if(matchAndEatToken(TOKEN_VAR)) {
+				varDeclaration();
+		}
+		else if(matchAndEatToken(TOKEN_SEMICOLON)) {
+				// no initializer
+		}
+		else {
+				expressionStatement();
+		}
+
+		int condition_index = vm.code.count;
+		// Condition
+		expression();
+		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after the condition expression");
+		
+		int jump_out_body = setCheckPoint(OP_JUMP_IF_FALSE);
+		int jump_to_body = setCheckPoint(OP_JUMP);
+
+		int increment_index = vm.code.count;
+		// increment
+		expression();
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the for loop");
+
+		int check_condition_idx = setCheckPoint(OP_JUMP_BACKWARD);
+		setBackWardJumpSize(check_condition_idx, condition_index);
+
+		setJumpSize(jump_to_body);
+		// for loop body
+		statement();
+
+		int go_back_to_idx = setCheckPoint(OP_JUMP_BACKWARD);
+		setBackWardJumpSize(go_back_to_idx, increment_index);
+
+		vm.scope--;
+		deleteOutOfScopeVariables();
+		setJumpSize(jump_out_body);
+}
+
 static void statement() {
 		if(matchAndEatToken(TOKEN_LEFT_BRACE)) {
 				block();
@@ -432,6 +475,9 @@ static void statement() {
 		}
 		else if(matchAndEatToken(TOKEN_WHILE)) {
 				whileStatement();
+		}
+		else if(matchAndEatToken(TOKEN_FOR)) {
+				forStatement();
 		}
 		else {
 				expressionStatement();
