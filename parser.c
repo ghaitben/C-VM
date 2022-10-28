@@ -296,6 +296,12 @@ static bool primary() {
 		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
 				if(peekToken()->type == TOKEN_EQUAL) return true;
 
+				// Check for reflexive assignment
+				for(int i = vm.local_top - 1; i >= 0; --i) {
+						if(strcmp(parser.previous->lexeme, vm.locals[i].name)) continue;
+						CHECK(vm.locals[i].scope != -1, "Relfexive assignment is not allowed");
+				}
+
 				writeByteArray(&vm.code, OP_GET);
 				WRITE_VALUE(CREATE_NUMBER, resolveLocal(parser.previous->lexeme));
 				return true;
@@ -329,6 +335,7 @@ static void declaration() {
 static void varDeclaration() {
 		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
 
+		// Check if a variable was already defined before.
 		for(int i = vm.local_top - 1; i >= 0 && vm.locals[i].scope == vm.scope; --i) {
 				if(strcmp(vm.locals[i].name, parser.previous->lexeme)) continue;
 				CHECK(false, "Variable already defined");
@@ -336,7 +343,7 @@ static void varDeclaration() {
 
 		Local *local = &vm.locals[vm.local_top++];
 		local->name = dynamicStrCpy(parser.previous->lexeme);
-		local->scope = vm.scope;
+		local->scope = -1;
 
 		if(matchAndEatToken(TOKEN_EQUAL)) {
 				expression();
@@ -344,6 +351,7 @@ static void varDeclaration() {
 		else {
 				WRITE_VALUE(CREATE_NIL);
 		}
+		local->scope = vm.scope;
 
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after var declaration");
 }
