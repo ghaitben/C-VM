@@ -36,6 +36,7 @@ static void setJumpSize(int jump);
 static bool reachedEOF();
 static bool stringEquals();
 static char *dynamicStrCpy(char *s);
+static int resolveLocal(char *lexeme);
 
 Parser parser;
 
@@ -123,15 +124,12 @@ static void assignment() {
 				CHECK(false, "Invalid assignment target");
 		}
 
-		char *lexeme = dynamicStrCpy(parser.previous->lexeme);
+		char *lexeme = parser.previous->lexeme;
 		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
 				assignment();
 
 				writeByteArray(&vm.code, OP_ASSIGN);
-				WRITE_VALUE(CREATE_STRING, lexeme);
-		}
-		else {
-				free(lexeme);
+				WRITE_VALUE(CREATE_NUMBER, resolveLocal(lexeme));
 		}
 }
 
@@ -254,6 +252,14 @@ static char *dynamicStrCpy(char *s) {
 		return ret;
 }
 
+static int resolveLocal(char *lexeme) {
+		for(int i = vm.local_top - 1; i >= 0; --i) {
+				if(strcmp(lexeme, vm.locals[i].name)) continue;
+				return i;
+		}
+		CHECK(false, "undefined token");
+}
+
 static bool primary() {
 		if(reachedEOF()) return false;
 
@@ -290,9 +296,8 @@ static bool primary() {
 		else if(matchAndEatToken(TOKEN_IDENTIFIER)) {
 				if(peekToken()->type == TOKEN_EQUAL) return true;
 
-				char *copy_lexeme = dynamicStrCpy(parser.previous->lexeme);
 				writeByteArray(&vm.code, OP_GET);
-				WRITE_VALUE(CREATE_STRING, copy_lexeme);
+				WRITE_VALUE(CREATE_NUMBER, resolveLocal(parser.previous->lexeme));
 				return true;
 		}
 		else {

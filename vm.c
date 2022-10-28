@@ -53,9 +53,7 @@ void push(Value value) {
 }
 
 Value pop() {
-		if(vm.stack_top == 0) {
-				printCode(&vm.code);
-		}
+		if(vm.stack_top == 0) printf("%d\n", vm.ip);
 		CHECK(vm.stack_top > 0, "Trying to pop an element from an empty Stack!");
 		vm.stack_top--;
 		return vm.stack[vm.stack_top];
@@ -162,7 +160,7 @@ static void negateHandler() {
 }
 
 static void checkReflexiveAssignmentHandler() {
-		for(int i = vm.stack_top - 2; i >= 0; --i) {
+		for(int i = vm.local_top - 2; i >= 0; --i) {
 				if(strcmp(vm.locals[i].name, vm.locals[vm.local_top - 1].name)) continue;
 
 				CHECK(!valueEquals(&vm.stack[i], &vm.stack[vm.stack_top - 1]), 
@@ -172,40 +170,25 @@ static void checkReflexiveAssignmentHandler() {
 }
 
 static void getHandler() {
-		vm.ip++;
-		valueHandler();
+		// OP_GET OP_VALUE index_on_value_array
+		//   ^
+		//  vm.ip
 
-		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
-						"variable identifier is not a string");
-		char *key = pop().as.string;
-
-		for(int i = vm.local_top - 1; i >= 0; --i) {
-				Local *local = &vm.locals[i];
-				if(strcmp(local->name, key)) continue;
-
-				push(vm.stack[i]);
-				return;
-		}
-		CHECK(false, "Unknown identifier");
-
+		uint8_t pos_on_value_array = vm.code.array[vm.ip + 2];
+		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number;
+		push(vm.stack[pos_on_stack]);
+		vm.ip += 3;
 }
 
 static void assignHandler() {
-		vm.ip++;
-		valueHandler();
+		// OP_GET OP_VALUE index_on_value_array
+		//   ^
+		//  vm.ip
 
-		CHECK(vm.stack_top > 0 && vm.stack[vm.stack_top - 1].type == VALUE_TYPE_STRING, 
-						"variable identifier is not a string");
-		char *identifier = pop().as.string;
-
-		for(int i = vm.local_top - 1; i >= 0; --i) {
-				Local *local = &vm.locals[i];
-				if(strcmp(local->name, identifier)) continue;
-
-				vm.stack[i] = vm.stack[vm.stack_top - 1];
-				return;
-		}
-		CHECK(false, "Unknown identifier");
+		uint8_t pos_on_value_array = vm.code.array[vm.ip + 2];
+		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number;
+		vm.stack[pos_on_stack] = vm.stack[vm.stack_top - 1];
+		vm.ip += 3;
 }
 
 static bool isTrue(Value value) {
