@@ -183,9 +183,6 @@ static void getHandler() {
 						"variable identifier is not a string");
 		char *key = pop().as.string;
 
-		CHECK(strcmp(key, vm.locals[vm.local_top - 1].name),
-						"Reflexive assignment is not allowed");
-
 		for(int i = vm.local_top - 1; i >= 0; --i) {
 				Local *local = &vm.locals[i];
 				if(strcmp(local->name, key)) continue;
@@ -229,6 +226,11 @@ static void jumpIfFalseHandler() {
 static void jumpHandler() {
 		uint16_t jump_size = (vm.code.array[vm.ip + 1] << 8) | vm.code.array[vm.ip + 2];
 		vm.ip += jump_size;
+}
+
+static void jumpBackwardHandler() {
+		uint16_t jump_size = (vm.code.array[vm.ip + 1] << 8) | vm.code.array[vm.ip + 2];
+		vm.ip -= jump_size;
 }
 
 // This is where our virtual machine will spend most of its time.
@@ -295,6 +297,9 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_JUMP:
 						jumpHandler();
+						break;
+				case OP_JUMP_BACKWARD:
+						jumpBackwardHandler();
 						break;
 		}
 }

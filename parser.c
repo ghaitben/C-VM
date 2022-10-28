@@ -370,6 +370,13 @@ static void setJumpSize(int jump) {
 		vm.code.array[jump + 2] = correct_jump_size & 0xff;
 }
 
+static void setBackWardJumpSize(int jump, int loop_start) {
+		int correct_jump_size = vm.code.count - loop_start - 3;
+
+		vm.code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
+		vm.code.array[jump + 2] = correct_jump_size & 0xff;
+}
+
 static void ifStatement() {
 		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after 'if'");
 		expression();
@@ -388,13 +395,37 @@ static void ifStatement() {
 
 }
 
+static void deleteOutOfScopeVariables() {
+		while(vm.local_top > 0 && 
+						vm.locals[vm.local_top - 1].scope > vm.scope)
+		{
+				writeByteArray(&vm.code, OP_POP);
+				vm.local_top--;
+		}
+}
+
 static void block() {
 		vm.scope++;
 		while(!reachedEOF() && !(peekToken()->type == TOKEN_RIGHT_BRACE)) {
 				declaration();
 		}
 		vm.scope--;
+		deleteOutOfScopeVariables();
 		eatTokenOrReturnError(TOKEN_RIGHT_BRACE, "Expected '}' after the block");
+}
+
+static void whileStatement() {
+		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after 'while'");
+		int loop_start = vm.code.count;
+		expression();
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after while expression");
+
+		int exit_jump = setCheckPoint(OP_JUMP_IF_FALSE);
+		statement();
+		int go_back = setCheckPoint(OP_JUMP_BACKWARD);
+
+		setJumpSize(exit_jump);
+		setBackWardJumpSize(go_back, loop_start);
 }
 
 static void statement() {
@@ -403,6 +434,9 @@ static void statement() {
 		}
 		else if(matchAndEatToken(TOKEN_IF)) {
 				ifStatement();
+		}
+		else if(matchAndEatToken(TOKEN_WHILE)) {
+				whileStatement();
 		}
 		else {
 				expressionStatement();
