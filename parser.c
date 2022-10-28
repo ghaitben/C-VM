@@ -22,6 +22,8 @@ static bool comparison();
 static void assignment();
 static void declaration();
 static void statement();
+static void expressionStatement();
+static void block();
 static void varDeclaration();
 static void funDeclaration();
 static bool matchAndEatToken(TokenType type);
@@ -118,8 +120,6 @@ static void assignment() {
 
 				writeByteArray(&vm.code, OP_ASSIGN);
 				WRITE_VALUE(CREATE_STRING, lexeme);
-
-				eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected a ';' at the end of the assignment");
 		}
 		else {
 				free(lexeme);
@@ -285,7 +285,7 @@ static void declaration() {
 				funDeclaration();
 		}
 		else {
-				expression();
+				statement();
 		}
 }
 
@@ -310,6 +310,26 @@ static void funDeclaration() {
 
 }
 
-static void statement() {
+static void expressionStatement() {
+		expression();
+		writeByteArray(&vm.code, OP_POP);
+		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' at the end of the expression");
+}
 
+static void block() {
+		vm.scope++;
+		while(!reachedEOF() && !(peekToken()->type == TOKEN_RIGHT_BRACE)) {
+				declaration();
+		}
+		vm.scope--;
+		eatTokenOrReturnError(TOKEN_RIGHT_BRACE, "Expected '}' after the block");
+}
+
+static void statement() {
+		if(matchAndEatToken(TOKEN_LEFT_BRACE)) {
+				block();
+		}
+		else {
+				expressionStatement();
+		}
 }

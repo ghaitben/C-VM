@@ -183,6 +183,9 @@ static void getHandler() {
 						"variable identifier is not a string");
 		char *key = pop().as.string;
 
+		CHECK(strcmp(key, vm.locals[vm.local_top - 1].name),
+						"Reflexive assignment is not allowed");
+
 		for(int i = vm.local_top - 1; i >= 0; --i) {
 				Local *local = &vm.locals[i];
 				if(strcmp(local->name, key)) continue;
@@ -206,7 +209,7 @@ static void assignHandler() {
 				Local *local = &vm.locals[i];
 				if(strcmp(local->name, identifier)) continue;
 
-				vm.stack[i] = pop();
+				vm.stack[i] = vm.stack[vm.stack_top - 1];
 				return;
 		}
 		CHECK(false, "Unknown identifier");
