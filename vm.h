@@ -6,9 +6,6 @@
 #include "hash_table.h"
 #include <stdint.h>
 
-// The size of the stack of our virtual machine.
-#define STACK_MAX 255
-
 /*
  * This macro performs a binary operation using the operator `op` and
  * pushes the result into the stack. The type of the result is based on the parameter 
@@ -25,13 +22,6 @@
 				CHECK(IS_NUMBER(lhs) && IS_NUMBER(rhs), "Both Operands must be numbers"); \
 				push(value_type(lhs.as.number op rhs.as.number)); \
 		} while(false)
-
-#define WRITE_VALUE(value_type, ...) \
-		do { \
-				writeByteArray(&vm.code, OP_VALUE); \
-				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, value_type(__VA_ARGS__)); \
-				writeByteArray(&vm.code, pos_on_value_array); \
-		}while(false)
 
 typedef struct VM VM;
 

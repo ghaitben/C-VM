@@ -3,6 +3,14 @@
 
 #include "tokenizer.h"
 
+#define WRITE_VALUE(value_type, ...) \
+		do { \
+				writeByteArray(&current_function->code, OP_VALUE); \
+				uint8_t pos_on_value_array = writeValueArray(&vm.value_array, value_type(__VA_ARGS__)); \
+				writeByteArray(&current_function->code, pos_on_value_array); \
+		}while(false)
+
+
 /*
  * The parser holds:
  *   + a reference to the most recent token parsed

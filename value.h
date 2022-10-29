@@ -2,6 +2,7 @@
 #define COMPILER_VALUE_H
 
 #include <stdbool.h>
+#include "utility.h"
 #include <stdint.h>
 
 // Creates a Value and initializes its number field with value.
@@ -21,10 +22,15 @@
 #define CREATE_NIL(value) \
 		((Value) {VALUE_TYPE_NIL, {}})
 
+// Creates a Value of type VALUE_TYPE_FUNCTION that contains data for a certain function
+#define CREATE_FUNCTION(value) \
+		((Value) {VALUE_TYPE_FUNCTION, {.function = value}})
+
 #define IS_NUMBER(value) ((value).type == VALUE_TYPE_NUMBER)
 #define IS_BOOLEAN(value) ((value).type == VALUE_TYPE_BOOLEAN)
 #define IS_STRING(value) ((value).type == VALUE_TYPE_STRING)
 #define IS_NIL(value) ((value).type == VALUE_TYPE_NIL)
+#define IS_FUNCTION(value) ((value).type == VALUE_TYPE_FUNCTION)
 
 typedef struct Value Value;
 typedef struct ValueArray ValueArray;
@@ -35,8 +41,23 @@ enum ValueType {
 		VALUE_TYPE_NUMBER,
 		VALUE_TYPE_NIL,
 		VALUE_TYPE_BOOLEAN,
-		VALUE_TYPE_STRING
+		VALUE_TYPE_STRING,
+		VALUE_TYPE_FUNCTION
 };
+
+typedef struct {
+		ByteArray code;
+		Local locals[STACK_MAX];
+		int local_top;
+		char *name;
+} Function;
+Function *createFunction(char *name);
+
+typedef struct {
+		Function *function;
+		int ip;
+		int fun_stack_top;
+} CallFrame;
 
 // Value is the runtime representation of our program's data.
 // Data inside Value can be of any type among the types defined in the enum
@@ -48,6 +69,7 @@ struct Value {
 				double number;
 				bool boolean;
 				char *string;
+				Function *function;
 		} as;
 };
 void freeValue(Value *value);
@@ -66,5 +88,7 @@ void freeValueArray(ValueArray *value_array);
 
 // Returns the position of the inserted value in the value_array.
 uint8_t writeValueArray(ValueArray *value_array, Value value);
+
+extern Function *current_function;
 
 #endif

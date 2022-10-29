@@ -40,6 +40,7 @@ static char *dynamicStrCpy(char *s);
 static int resolveLocal(char *lexeme);
 
 Parser parser;
+Function *current_function;
 
 void initParser(Parser *parser) {
 		parser->previous = NULL;
@@ -129,7 +130,7 @@ static void assignment() {
 		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
 				assignment();
 
-				writeByteArray(&vm.code, OP_ASSIGN);
+				writeByteArray(&current_function->code, OP_ASSIGN);
 				WRITE_VALUE(CREATE_NUMBER, resolveLocal(lexeme));
 		}
 }
@@ -173,8 +174,8 @@ static bool equality() {
 				comparison();
 
 				// Actions associated with the production `equality`
-				if(stringEquals(operator, "==")) writeByteArray(&vm.code, OP_EQUAL_EQUAL);
-				if(stringEquals(operator, "!=")) writeByteArray(&vm.code, OP_BANG_EQUAL);
+				if(stringEquals(operator, "==")) writeByteArray(&current_function->code, OP_EQUAL_EQUAL);
+				if(stringEquals(operator, "!=")) writeByteArray(&current_function->code, OP_BANG_EQUAL);
 		}
 		return can_assign;
 }
@@ -190,10 +191,10 @@ static bool comparison() {
 				term();
 
 				// Actions associated with the production `comparison`
-				if(stringEquals(operator, ">=")) writeByteArray(&vm.code, OP_GREATER_EQUAL);
-				if(stringEquals(operator, "<=")) writeByteArray(&vm.code, OP_LESS_EQUAL);
-				if(stringEquals(operator, ">")) writeByteArray(&vm.code, OP_GREATER);
-				if(stringEquals(operator, "<")) writeByteArray(&vm.code, OP_LESS);
+				if(stringEquals(operator, ">=")) writeByteArray(&current_function->code, OP_GREATER_EQUAL);
+				if(stringEquals(operator, "<=")) writeByteArray(&current_function->code, OP_LESS_EQUAL);
+				if(stringEquals(operator, ">")) writeByteArray(&current_function->code, OP_GREATER);
+				if(stringEquals(operator, "<")) writeByteArray(&current_function->code, OP_LESS);
 		}
 		return can_assign;
 }
@@ -207,8 +208,8 @@ static bool term() {
 				factor();
 
 				// Actions associated with the production `term`
-				if(stringEquals(operator, "+")) writeByteArray(&vm.code, OP_ADD);
-				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_SUBSTRACT);
+				if(stringEquals(operator, "+")) writeByteArray(&current_function->code, OP_ADD);
+				if(stringEquals(operator, "-")) writeByteArray(&current_function->code, OP_SUBSTRACT);
 		}
 		return can_assign;
 }
@@ -222,8 +223,8 @@ static bool factor() {
 				unary();
 
 				// Actions associated with the production `factor`
-				if(stringEquals(operator, "*")) writeByteArray(&vm.code, OP_MULTIPLY);
-				if(stringEquals(operator, "/")) writeByteArray(&vm.code, OP_DIVIDE);
+				if(stringEquals(operator, "*")) writeByteArray(&current_function->code, OP_MULTIPLY);
+				if(stringEquals(operator, "/")) writeByteArray(&current_function->code, OP_DIVIDE);
 		}
 		return can_assign;
 }
@@ -237,8 +238,8 @@ static bool unary() {
 				unary();
 
 				// Actions associated with the production `unary`
-				if(stringEquals(operator, "!")) writeByteArray(&vm.code, OP_NOT);
-				if(stringEquals(operator, "-")) writeByteArray(&vm.code, OP_NEGATE);
+				if(stringEquals(operator, "!")) writeByteArray(&current_function->code, OP_NOT);
+				if(stringEquals(operator, "-")) writeByteArray(&current_function->code, OP_NEGATE);
 		}
 		return can_assign && primary();
 }
@@ -254,8 +255,8 @@ static char *dynamicStrCpy(char *s) {
 }
 
 static int resolveLocal(char *lexeme) {
-		for(int i = vm.local_top - 1; i >= 0; --i) {
-				if(strcmp(lexeme, vm.locals[i].name)) continue;
+		for(int i = current_function->local_top - 1; i >= 0; --i) {
+				if(strcmp(lexeme, current_function->locals[i].name)) continue;
 				return i;
 		}
 		CHECK(false, "undefined token");
@@ -298,12 +299,12 @@ static bool primary() {
 				if(peekToken()->type == TOKEN_EQUAL) return true;
 
 				// Check for reflexive assignment
-				for(int i = vm.local_top - 1; i >= 0; --i) {
-						if(strcmp(parser.previous->lexeme, vm.locals[i].name)) continue;
-						CHECK(vm.locals[i].scope != -1, "Relfexive assignment is not allowed");
+				for(int i = current_function->local_top - 1; i >= 0; --i) {
+						if(strcmp(parser.previous->lexeme, current_function->locals[i].name)) continue;
+						CHECK(current_function->locals[i].scope != -1, "Relfexive assignment is not allowed");
 				}
 
-				writeByteArray(&vm.code, OP_GET);
+				writeByteArray(&current_function->code, OP_GET);
 				WRITE_VALUE(CREATE_NUMBER, resolveLocal(parser.previous->lexeme));
 				return true;
 		}
@@ -316,6 +317,7 @@ static bool primary() {
 }
 
 void parse() {
+		current_function = createFunction("__main__");
 		while(!reachedEOF()) {
 				declaration();
 		}
@@ -340,12 +342,12 @@ static void varDeclaration() {
 		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
 
 		// Check if a variable was already defined before.
-		for(int i = vm.local_top - 1; i >= 0 && vm.locals[i].scope == vm.scope; --i) {
-				if(strcmp(vm.locals[i].name, parser.previous->lexeme)) continue;
+		for(int i = current_function->local_top - 1; i >= 0 && current_function->locals[i].scope == vm.scope; --i) {
+				if(strcmp(current_function->locals[i].name, parser.previous->lexeme)) continue;
 				CHECK(false, "Variable already defined");
 		}
 
-		Local *local = &vm.locals[vm.local_top++];
+		Local *local = &current_function->locals[current_function->local_top++];
 		local->name = dynamicStrCpy(parser.previous->lexeme);
 		// Mark as uninitialized
 		local->scope = -1;
@@ -363,34 +365,47 @@ static void varDeclaration() {
 }
 
 static void funDeclaration() {
+		char *function_name = eatTokenOrReturnError(TOKEN_IDENTIFIER, 
+						"Expected identifier after fun clause")->lexeme;
+		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after function name");
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after arguments");
+
+		Function *new_function = createFunction(function_name);
+		Function *previous_function = current_function;
+		current_function = new_function;
+		block();
+		current_function = previous_function;
+
+		writeByteArray(&current_function->code, OP_VALUE);
+		WRITE_VALUE(CREATE_FUNCTION, new_function);
 }
 
 static void expressionStatement() {
 		expression();
-		writeByteArray(&vm.code, OP_POP);
+		writeByteArray(&current_function->code, OP_POP);
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' at the end of the expression");
 }
 
 static int setCheckPoint(OpCode op_code) {
-		writeByteArray(&vm.code, op_code);
-		writeByteArray(&vm.code, 0xff);
-		writeByteArray(&vm.code, 0xff);
+		writeByteArray(&current_function->code, op_code);
+		writeByteArray(&current_function->code, 0xff);
+		writeByteArray(&current_function->code, 0xff);
 
-		return vm.code.count - 3;
+		return current_function->code.count - 3;
 }
 
 static void setJumpSize(int jump) {
-		int correct_jump_size = vm.code.count - jump;
+		int correct_jump_size = current_function->code.count - jump;
 
-		vm.code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
-		vm.code.array[jump + 2] = correct_jump_size & 0xff;
+		current_function->code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
+		current_function->code.array[jump + 2] = correct_jump_size & 0xff;
 }
 
 static void setBackWardJumpSize(int jump, int loop_start) {
-		int correct_jump_size = vm.code.count - loop_start - 3;
+		int correct_jump_size = current_function->code.count - loop_start - 3;
 
-		vm.code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
-		vm.code.array[jump + 2] = correct_jump_size & 0xff;
+		current_function->code.array[jump + 1] = (correct_jump_size >> 8) & 0xff;
+		current_function->code.array[jump + 2] = correct_jump_size & 0xff;
 }
 
 static void ifStatement() {
@@ -412,12 +427,12 @@ static void ifStatement() {
 }
 
 static void deleteOutOfScopeVariables() {
-		while(vm.local_top > 0 && 
-						vm.locals[vm.local_top - 1].scope > vm.scope)
+		while(current_function->local_top > 0 && 
+						current_function->locals[current_function->local_top - 1].scope > vm.scope)
 		{
-				writeByteArray(&vm.code, OP_POP);
-				vm.local_top--;
-				free(vm.locals[vm.local_top].name);
+				writeByteArray(&current_function->code, OP_POP);
+				current_function->local_top--;
+				free(current_function->locals[current_function->local_top].name);
 		}
 }
 
@@ -433,7 +448,7 @@ static void block() {
 
 static void whileStatement() {
 		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after 'while'");
-		int loop_start = vm.code.count;
+		int loop_start = current_function->code.count;
 		expression();
 		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after while expression");
 
@@ -460,7 +475,7 @@ static void forStatement() {
 				expressionStatement();
 		}
 
-		int condition_index = vm.code.count;
+		int condition_index = current_function->code.count;
 		// Condition
 		expression();
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after the condition expression");
@@ -468,7 +483,7 @@ static void forStatement() {
 		int jump_out_body = setCheckPoint(OP_JUMP_IF_FALSE);
 		int jump_to_body = setCheckPoint(OP_JUMP);
 
-		int increment_index = vm.code.count;
+		int increment_index = current_function->code.count;
 		// increment
 		expression();
 		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the for loop");

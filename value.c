@@ -11,6 +11,13 @@ void freeValue(Value *value) {
 		}
 }
 
+Function *createFunction(char *name) {
+		Function *function = malloc(sizeof(Function));
+		function->name = name;
+		function->local_top = 0;
+		initByteArray(&function->code);
+}
+
 bool valueEquals(Value *this, Value *other) {
 		if(this->type != other->type) return false;
 		switch(this->type) {
