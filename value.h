@@ -49,9 +49,11 @@ typedef struct {
 		ByteArray code;
 		Local locals[STACK_MAX];
 		int local_top;
+		int arity;
 		char *name;
 } Function;
 Function *createFunction(char *name);
+void freeFunction(Function *function);
 
 typedef struct {
 		Function *function;
@@ -90,5 +92,6 @@ void freeValueArray(ValueArray *value_array);
 uint8_t writeValueArray(ValueArray *value_array, Value value);
 
 extern Function *current_function;
+extern CallFrame *current_frame;
 
 #endif

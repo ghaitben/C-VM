@@ -52,12 +52,12 @@ typedef enum {
 
 // There will be one global instance of the virtual machine throughout the whole process.
 struct VM {
+		CallFrame frames[STACK_MAX];
+		int frame_top;
+
 		Value stack[STACK_MAX];
-		Local locals[STACK_MAX];
 		int stack_top;
-		int local_top;
-		int ip;
-		ByteArray code;
+
 		ValueArray value_array;
 		HashTable table;
 		int scope;

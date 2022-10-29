@@ -6,9 +6,22 @@
 #include "error.h"
 
 void freeValue(Value *value) {
-		if(value->type == VALUE_TYPE_STRING) {
-				free(value->as.string);
+		switch(value->type) {
+				case VALUE_TYPE_STRING:
+						free(value->as.string);
+						break;
+				case VALUE_TYPE_FUNCTION:
+						freeFunction(value->as.function);
+						break;
 		}
+}
+
+void freeFunction(Function *function) {
+		freeByteArray(&function->code);
+		for(int i = 0; i < function->local_top; ++i) {
+				free(function->locals[i].name);
+		}
+		free(function);
 }
 
 Function *createFunction(char *name) {

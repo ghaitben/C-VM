@@ -327,11 +327,8 @@ static void declaration() {
 		if(matchAndEatToken(TOKEN_FUN)) {
 				funDeclaration();
 		}
-		if(matchAndEatToken(TOKEN_VAR)) {
+		else if(matchAndEatToken(TOKEN_VAR)) {
 				varDeclaration();
-		}
-		else if(matchAndEatToken(TOKEN_FUN)) {
-				funDeclaration();
 		}
 		else {
 				statement();
@@ -342,6 +339,7 @@ static void varDeclaration() {
 		eatTokenOrReturnError(TOKEN_IDENTIFIER, "Expected Identifier after 'var'.");
 
 		// Check if a variable was already defined before.
+
 		for(int i = current_function->local_top - 1; i >= 0 && current_function->locals[i].scope == vm.scope; --i) {
 				if(strcmp(current_function->locals[i].name, parser.previous->lexeme)) continue;
 				CHECK(false, "Variable already defined");
@@ -365,18 +363,37 @@ static void varDeclaration() {
 }
 
 static void funDeclaration() {
+		// function name
 		char *function_name = eatTokenOrReturnError(TOKEN_IDENTIFIER, 
 						"Expected identifier after fun clause")->lexeme;
-		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after function name");
-		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after arguments");
-
 		Function *new_function = createFunction(function_name);
 		Function *previous_function = current_function;
 		current_function = new_function;
+
+		// Open parenthesis
+		eatTokenOrReturnError(TOKEN_LEFT_PAREN, "Expected '(' after function name");
+		
+		//arguments
+		do {
+				if(peekToken()->type == TOKEN_RIGHT_PAREN) break;
+
+				Local *local = &current_function->locals[current_function->local_top++];
+				local->name = dynamicStrCpy(eatTokenOrReturnError(TOKEN_IDENTIFIER,
+								"Expected identifier")->lexeme);
+				local->scope = vm.scope;
+				current_function->arity++;
+
+		}	while(matchAndEatToken(TOKEN_COMMA));
+
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after arguments");
+		eatTokenOrReturnError(TOKEN_LEFT_BRACE, "Expected '{' at the beginning of fun declaration");
+
+		// Function body.
 		block();
+
+		// Go back to the outer function once we are done parsing the inner one.
 		current_function = previous_function;
 
-		writeByteArray(&current_function->code, OP_VALUE);
 		WRITE_VALUE(CREATE_FUNCTION, new_function);
 }
 
