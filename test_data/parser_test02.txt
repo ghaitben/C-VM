@@ -1,9 +1,6 @@
-fun function() {
-		var a = 2;
+fun recursive(n) {
+    if(n > 0) {
+		    recursive(n - 1);
+		}
+		print n;
 }
-
-fun function2(a, b) {
-		var e = a + 1;
-}
-
-function2(10, 11);

@@ -183,6 +183,14 @@ static void jumpBackwardHandler() {
 		current_frame->ip -= jump_size;
 }
 
+static void printHandler() {
+		Value to_print = pop();
+
+		printValue(&to_print);
+		printf("\n");
+		current_frame->ip++;
+}
+
 void callFunction(Function *function, int arity) {
 		CallFrame *previous_frame = current_frame;
 
@@ -208,9 +216,6 @@ static void callHandler() {
 		CHECK(function.as.function->arity == arity, "Wrong number of arguments");
 
 		callFunction(function.as.function, arity);
-
-		printf("<fn> %s arity = %d\n", function.as.function->name, 
-						function.as.function->arity);
 }
 
 // This is where our virtual machine will spend most of its time.
@@ -280,6 +285,9 @@ static void decodeInstruction(OpCode op) {
 						break;
 				case OP_CALL:
 						callHandler();
+						break;
+				case OP_PRINT:
+						printHandler();
 						break;
 		}
 }

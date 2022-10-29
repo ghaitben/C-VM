@@ -28,6 +28,7 @@ Function *createFunction(char *name) {
 		Function *function = malloc(sizeof(Function));
 		function->name = name;
 		function->local_top = 0;
+		function->arity = 0;
 		initByteArray(&function->code);
 }
 

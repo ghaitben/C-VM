@@ -278,6 +278,7 @@ static int resolveLocal(char *lexeme) {
 				if(strcmp(lexeme, current_function->locals[i].name)) continue;
 				return i;
 		}
+		printf("%s\n", lexeme);
 		CHECK(false, "undefined variable");
 }
 
@@ -543,6 +544,12 @@ static void forStatement() {
 		setJumpSize(jump_out_body);
 }
 
+static void printStatement() {
+		expression();
+		writeByteArray(&current_function->code, OP_PRINT);
+		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after the end of a print statement");
+}
+
 static void statement() {
 		if(matchAndEatToken(TOKEN_LEFT_BRACE)) {
 				block();
@@ -555,6 +562,9 @@ static void statement() {
 		}
 		else if(matchAndEatToken(TOKEN_FOR)) {
 				forStatement();
+		}
+		else if(matchAndEatToken(TOKEN_PRINT)) {
+				printStatement();
 		}
 		else {
 				expressionStatement();
