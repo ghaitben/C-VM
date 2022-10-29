@@ -25,6 +25,9 @@ add_library(Utils
 
 		hash_table.h
 		hash_table.c
+
+		utility.h
+		utility.c
 		)
 
 add_executable(main main.c)

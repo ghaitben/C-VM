@@ -2,6 +2,7 @@
 #define COMPILER_VM_H
 
 #include "value.h"
+#include "utility.h"
 #include "hash_table.h"
 #include <stdint.h>
 
@@ -33,7 +34,6 @@
 		}while(false)
 
 typedef struct VM VM;
-typedef struct ByteArray ByteArray;
 
 // The operations that our virtual machine can decode and execute.
 typedef enum {
@@ -59,22 +59,6 @@ typedef enum {
 		OP_EQUAL_EQUAL,
 		OP_BANG_EQUAL
 } OpCode;
-
-// The array where the bytecode will be stored before getting executed.
-// The Bytecode is written to this array in the parsing phase.
-struct ByteArray {
-		int count;
-		int capacity;
-		uint8_t *array;
-};
-void initByteArray(ByteArray *byte_array);
-void freeByteArray(ByteArray *byte_array);
-void writeByteArray(ByteArray *byte_array, uint8_t byte);
-
-typedef struct {
-		char *name;
-		int scope;
-} Local;
 
 // There will be one global instance of the virtual machine throughout the whole process.
 struct VM {

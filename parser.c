@@ -2,6 +2,7 @@
 #include "error.h"
 #include "value.h"
 #include "debug.h"
+#include "utility.h"
 #include "vm.h"
 #include <stddef.h>
 #include <stdio.h>
