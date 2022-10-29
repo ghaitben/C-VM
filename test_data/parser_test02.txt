@@ -2,5 +2,8 @@ fun function() {
 		var a = 2;
 }
 
-fun function2() {
+fun function2(a, b) {
+		var e = a + 1;
 }
+
+function2(10, 11);

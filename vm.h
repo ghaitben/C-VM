@@ -32,6 +32,7 @@ typedef enum {
 		OP_NEGATE,
 		OP_JUMP_IF_FALSE,
 		OP_JUMP_BACKWARD,
+		OP_CALL,
 		OP_JUMP,
 		OP_NOT,
 		OP_MULTIPLY,
@@ -72,6 +73,7 @@ void push(Value value);
 Value pop();
 
 // Interpret the bytecode written in the ByteArray.
+void interpret();
 void decode();
 
 extern VM vm;

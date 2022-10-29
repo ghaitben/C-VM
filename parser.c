@@ -22,6 +22,7 @@ static bool unary();
 static bool comparison();
 static bool and();
 static bool or();
+static bool call();
 static void assignment();
 static void declaration();
 static void statement();
@@ -241,7 +242,25 @@ static bool unary() {
 				if(stringEquals(operator, "!")) writeByteArray(&current_function->code, OP_NOT);
 				if(stringEquals(operator, "-")) writeByteArray(&current_function->code, OP_NEGATE);
 		}
-		return can_assign && primary();
+		return can_assign && call();
+}
+
+static bool call() {
+		bool can_assign = primary();
+		if(!matchAndEatToken(TOKEN_LEFT_PAREN)) return can_assign;
+
+		int arity = 0;
+		do {
+				if(peekToken()->type == TOKEN_RIGHT_PAREN) break;
+				expression();
+				arity++;
+		} while(matchAndEatToken(TOKEN_COMMA));
+
+		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the call");
+		writeByteArray(&current_function->code, OP_CALL);
+		WRITE_VALUE(CREATE_NUMBER, arity);
+
+		return false;
 }
 
 static char *dynamicStrCpy(char *s) {
@@ -259,7 +278,7 @@ static int resolveLocal(char *lexeme) {
 				if(strcmp(lexeme, current_function->locals[i].name)) continue;
 				return i;
 		}
-		CHECK(false, "undefined token");
+		CHECK(false, "undefined variable");
 }
 
 static bool primary() {
@@ -393,6 +412,10 @@ static void funDeclaration() {
 
 		// Go back to the outer function once we are done parsing the inner one.
 		current_function = previous_function;
+
+		Local *local = &current_function->locals[current_function->local_top++];
+		local->name = dynamicStrCpy(function_name);
+		local->scope = vm.scope;
 
 		WRITE_VALUE(CREATE_FUNCTION, new_function);
 }

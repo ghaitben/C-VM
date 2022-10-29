@@ -58,7 +58,7 @@ void freeFunction(Function *function);
 typedef struct {
 		Function *function;
 		int ip;
-		int fun_stack_top;
+		int fn_stack_top;
 } CallFrame;
 
 // Value is the runtime representation of our program's data.

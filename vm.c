@@ -141,7 +141,8 @@ static void getHandler() {
 		//  current_frame->ip
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
-		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number;
+		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number
+				+ current_frame->fn_stack_top;
 		push(vm.stack[pos_on_stack]);
 		current_frame->ip += 3;
 }
@@ -152,7 +153,8 @@ static void assignHandler() {
 		//  current_frame->ip
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
-		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number;
+		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number 
+				+ current_frame->fn_stack_top;
 		vm.stack[pos_on_stack] = vm.stack[vm.stack_top - 1];
 		current_frame->ip += 3;
 }
@@ -179,6 +181,36 @@ static void jumpBackwardHandler() {
 		uint16_t jump_size = (current_frame->function->code.array[current_frame->ip + 1] << 8)
 				| current_frame->function->code.array[current_frame->ip + 2];
 		current_frame->ip -= jump_size;
+}
+
+void callFunction(Function *function, int arity) {
+		CallFrame *previous_frame = current_frame;
+
+		CallFrame *new_frame = &vm.frames[vm.frame_top++];
+		new_frame->function = function;
+		new_frame->ip = 0;
+		new_frame->fn_stack_top = vm.stack_top - arity;
+		
+		current_frame = new_frame;
+		decode();
+		current_frame = previous_frame;
+}
+
+static void callHandler() {
+		current_frame->ip++;
+		valueHandler();
+
+		int arity = (int) pop().as.number;
+		Value function = vm.stack[vm.stack_top - arity - 1];
+
+		CHECK(IS_FUNCTION(function), "not a function");
+
+		CHECK(function.as.function->arity == arity, "Wrong number of arguments");
+
+		callFunction(function.as.function, arity);
+
+		printf("<fn> %s arity = %d\n", function.as.function->name, 
+						function.as.function->arity);
 }
 
 // This is where our virtual machine will spend most of its time.
@@ -246,17 +278,19 @@ static void decodeInstruction(OpCode op) {
 				case OP_JUMP_BACKWARD:
 						jumpBackwardHandler();
 						break;
+				case OP_CALL:
+						callHandler();
+						break;
 		}
 }
 
 void decode() {
-		current_frame = &vm.frames[0];
-		current_frame->function = current_function;
-		current_frame->ip = 0;
-		current_frame->fun_stack_top = 0;
-
 		while(current_frame->ip < current_frame->function->code.count) {
 				uint8_t instruction = current_frame->function->code.array[current_frame->ip];
 				decodeInstruction(instruction);
 		}
+}
+
+void interpret() {
+		callFunction(current_function, 0);
 }
