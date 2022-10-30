@@ -1,6 +1,8 @@
-fun recursive(n) {
-    if(n > 0) {
-		    recursive(n - 1);
+var a = 2;
+
+fun getGlobalVariable() {
+				print a;
 		}
-		print n;
-}
+
+a = 3;
+getGlobalVariable();

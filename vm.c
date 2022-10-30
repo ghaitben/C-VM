@@ -5,7 +5,7 @@
 #include <string.h>
 
 static void decodeInstruction(OpCode op_code);
-static void getHandler();
+static void getHandler(bool is_local);
 
 VM vm;
 CallFrame *current_frame;
@@ -135,26 +135,26 @@ static void negateHandler() {
 		current_frame->ip++;
 }
 
-static void getHandler() {
+static void getHandler(bool is_local) {
 		// OP_GET OP_VALUE index_on_value_array
 		//   ^
 		//  current_frame->ip
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
 		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number
-				+ current_frame->fn_stack_top;
+				+ is_local * (current_frame->fn_stack_top);
 		push(vm.stack[pos_on_stack]);
 		current_frame->ip += 3;
 }
 
-static void assignHandler() {
+static void assignHandler(bool is_local) {
 		// OP_GET OP_VALUE index_on_value_array
 		//   ^
 		//  current_frame->ip
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
 		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number 
-				+ current_frame->fn_stack_top;
+				+ is_local * (current_frame->fn_stack_top);
 		vm.stack[pos_on_stack] = vm.stack[vm.stack_top - 1];
 		current_frame->ip += 3;
 }
@@ -202,6 +202,7 @@ void callFunction(Function *function, int arity) {
 		current_frame = new_frame;
 		decode();
 		current_frame = previous_frame;
+		vm.frame_top--;
 }
 
 static void callHandler() {
@@ -265,10 +266,16 @@ static void decodeInstruction(OpCode op) {
 						negateHandler();
 						break;
 				case OP_GET:
-						getHandler();
+						getHandler(/*is_local = */true);
 						break;
 				case OP_ASSIGN:
-						assignHandler();
+						assignHandler(/*is_local = */true);
+						break;
+				case OP_GET_GLOBAL:
+						getHandler(/*is_local = */false);
+						break;
+				case OP_ASSIGN_GLOBAL:
+						assignHandler(/*is_local = */false);
 						break;
 				case OP_POP:
 						pop();

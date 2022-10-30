@@ -92,6 +92,7 @@ void freeValueArray(ValueArray *value_array);
 uint8_t writeValueArray(ValueArray *value_array, Value value);
 
 extern Function *current_function;
+extern Function *global_function;
 extern CallFrame *current_frame;
 
 #endif

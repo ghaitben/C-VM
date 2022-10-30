@@ -41,6 +41,8 @@ typedef enum {
 		OP_PRINT,
 		OP_ASSIGN,
 		OP_VALUE,
+		OP_GET_GLOBAL,
+		OP_ASSIGN_GLOBAL,
 		OP_LESS,
 		OP_SET,
 		OP_GET,

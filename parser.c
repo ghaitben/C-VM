@@ -39,9 +39,12 @@ static bool reachedEOF();
 static bool stringEquals();
 static char *dynamicStrCpy(char *s);
 static int resolveLocal(char *lexeme);
+static void defineVariable(char *lexeme);
+static void initializeVariable();
 
 Parser parser;
 Function *current_function;
+Function *global_function;
 
 void initParser(Parser *parser) {
 		parser->previous = NULL;
@@ -131,8 +134,17 @@ static void assignment() {
 		if(can_assign && matchAndEatToken(TOKEN_EQUAL)) {
 				assignment();
 
-				writeByteArray(&current_function->code, OP_ASSIGN);
-				WRITE_VALUE(CREATE_NUMBER, resolveLocal(lexeme));
+				int reso = resolveLocal(lexeme);
+				OpCode set_op;
+				if(reso < 0) {
+						reso = -reso - 1;
+						set_op = OP_ASSIGN_GLOBAL;
+				}
+				else {
+						set_op = OP_ASSIGN;
+				}
+				writeByteArray(&current_function->code, set_op);
+				WRITE_VALUE(CREATE_NUMBER, reso);
 		}
 }
 
@@ -278,6 +290,11 @@ static int resolveLocal(char *lexeme) {
 				if(strcmp(lexeme, current_function->locals[i].name)) continue;
 				return i;
 		}
+
+		for(int i = 0; i < global_function->local_top; ++i) {
+				if(strcmp(lexeme, global_function->locals[i].name)) continue;
+				return -i - 1;
+		}
 		printf("%s\n", lexeme);
 		CHECK(false, "undefined variable");
 }
@@ -324,8 +341,18 @@ static bool primary() {
 						CHECK(current_function->locals[i].scope != -1, "Relfexive assignment is not allowed");
 				}
 
-				writeByteArray(&current_function->code, OP_GET);
-				WRITE_VALUE(CREATE_NUMBER, resolveLocal(parser.previous->lexeme));
+				int reso = resolveLocal(parser.previous->lexeme);
+				OpCode get_op;
+				// Global variable
+				if(reso < 0) {
+						reso = -reso - 1;
+						get_op = OP_GET_GLOBAL;
+				}
+				else {
+						get_op = OP_GET;
+				}
+				writeByteArray(&current_function->code, get_op);
+				WRITE_VALUE(CREATE_NUMBER, reso);
 				return true;
 		}
 		else {
@@ -337,7 +364,8 @@ static bool primary() {
 }
 
 void parse() {
-		current_function = createFunction("__main__");
+		global_function = createFunction("__main__");
+		current_function = global_function;
 		while(!reachedEOF()) {
 				declaration();
 		}
@@ -360,15 +388,13 @@ static void varDeclaration() {
 
 		// Check if a variable was already defined before.
 
-		for(int i = current_function->local_top - 1; i >= 0 && current_function->locals[i].scope == vm.scope; --i) {
+		for(int i = current_function->local_top - 1; i >= 0 &&
+						current_function->locals[i].scope == vm.scope; --i) {
 				if(strcmp(current_function->locals[i].name, parser.previous->lexeme)) continue;
 				CHECK(false, "Variable already defined");
 		}
 
-		Local *local = &current_function->locals[current_function->local_top++];
-		local->name = dynamicStrCpy(parser.previous->lexeme);
-		// Mark as uninitialized
-		local->scope = -1;
+		defineVariable(parser.previous->lexeme);
 
 		if(matchAndEatToken(TOKEN_EQUAL)) {
 				expression();
@@ -377,17 +403,33 @@ static void varDeclaration() {
 				WRITE_VALUE(CREATE_NIL);
 		}
 		// Mark as initialized
-		local->scope = vm.scope;
+		initializeVariable();
 
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after var declaration");
+}
+
+static void defineVariable(char *lexeme) {
+		char *name = dynamicStrCpy(lexeme);
+		Local *local = &current_function->locals[current_function->local_top++];
+		local->name = name;
+		local->scope = -1;
+}
+
+static void initializeVariable() {
+		current_function->locals[current_function->local_top - 1].scope = vm.scope;
 }
 
 static void funDeclaration() {
 		// function name
 		char *function_name = eatTokenOrReturnError(TOKEN_IDENTIFIER, 
 						"Expected identifier after fun clause")->lexeme;
+
 		Function *new_function = createFunction(function_name);
 		Function *previous_function = current_function;
+
+		defineVariable(function_name);
+		initializeVariable();
+
 		current_function = new_function;
 
 		// Open parenthesis
@@ -413,10 +455,6 @@ static void funDeclaration() {
 
 		// Go back to the outer function once we are done parsing the inner one.
 		current_function = previous_function;
-
-		Local *local = &current_function->locals[current_function->local_top++];
-		local->name = dynamicStrCpy(function_name);
-		local->scope = vm.scope;
 
 		WRITE_VALUE(CREATE_FUNCTION, new_function);
 }
