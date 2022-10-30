@@ -142,7 +142,7 @@ static void getHandler(bool is_local) {
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
 		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number
-				+ is_local * (current_frame->fn_stack_top);
+				+ is_local * (current_frame->fn_stack_top + 1);
 		push(vm.stack[pos_on_stack]);
 		current_frame->ip += 3;
 }
@@ -154,7 +154,7 @@ static void assignHandler(bool is_local) {
 
 		uint8_t pos_on_value_array = current_frame->function->code.array[current_frame->ip + 2];
 		uint8_t pos_on_stack = vm.value_array.array[pos_on_value_array].as.number 
-				+ is_local * (current_frame->fn_stack_top);
+				+ is_local * (current_frame->fn_stack_top + 1);
 		vm.stack[pos_on_stack] = vm.stack[vm.stack_top - 1];
 		current_frame->ip += 3;
 }
@@ -193,16 +193,22 @@ static void printHandler() {
 
 void callFunction(Function *function, int arity) {
 		CallFrame *previous_frame = current_frame;
+		int previous_stack_top = vm.stack_top;
 
 		CallFrame *new_frame = &vm.frames[vm.frame_top++];
 		new_frame->function = function;
 		new_frame->ip = 0;
-		new_frame->fn_stack_top = vm.stack_top - arity;
-		
+		new_frame->fn_stack_top = vm.stack_top - arity - 1;
+
 		current_frame = new_frame;
 		decode();
-		current_frame = previous_frame;
+
+
 		vm.frame_top--;
+		Value return_value = pop();
+		current_frame = previous_frame;
+		vm.stack_top = new_frame->fn_stack_top;
+		push(return_value);
 }
 
 static void callHandler() {
@@ -217,6 +223,10 @@ static void callHandler() {
 		CHECK(function.as.function->arity == arity, "Wrong number of arguments");
 
 		callFunction(function.as.function, arity);
+}
+
+static void returnHandler() {
+		current_frame->ip = current_frame->function->code.count;
 }
 
 // This is where our virtual machine will spend most of its time.
@@ -296,6 +306,9 @@ static void decodeInstruction(OpCode op) {
 				case OP_PRINT:
 						printHandler();
 						break;
+				case OP_RETURN:
+						returnHandler();
+						break;
 		}
 }
 
@@ -307,5 +320,11 @@ void decode() {
 }
 
 void interpret() {
-		callFunction(current_function, 0);
+		current_frame = &vm.frames[vm.frame_top++];
+		current_frame->function = current_function;
+		current_frame->ip = 0;
+		current_frame->fn_stack_top = 0;
+
+		decode();
+
 }

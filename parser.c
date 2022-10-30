@@ -41,6 +41,7 @@ static char *dynamicStrCpy(char *s);
 static int resolveLocal(char *lexeme);
 static void defineVariable(char *lexeme);
 static void initializeVariable();
+static void returnStatement();
 
 Parser parser;
 Function *current_function;
@@ -286,7 +287,7 @@ static char *dynamicStrCpy(char *s) {
 }
 
 static int resolveLocal(char *lexeme) {
-		for(int i = current_function->local_top - 1; i >= 0; --i) {
+		for(int i = current_function->local_top - 1; i >= 0 && current_function != global_function; --i) {
 				if(strcmp(lexeme, current_function->locals[i].name)) continue;
 				return i;
 		}
@@ -439,10 +440,10 @@ static void funDeclaration() {
 		do {
 				if(peekToken()->type == TOKEN_RIGHT_PAREN) break;
 
-				Local *local = &current_function->locals[current_function->local_top++];
-				local->name = dynamicStrCpy(eatTokenOrReturnError(TOKEN_IDENTIFIER,
-								"Expected identifier")->lexeme);
-				local->scope = vm.scope;
+				char *param_name = eatTokenOrReturnError(TOKEN_IDENTIFIER, 
+								"Expected identifier name")->lexeme;
+				defineVariable(param_name);
+				initializeVariable();
 				current_function->arity++;
 
 		}	while(matchAndEatToken(TOKEN_COMMA));
@@ -452,6 +453,9 @@ static void funDeclaration() {
 
 		// Function body.
 		block();
+		WRITE_VALUE(CREATE_NIL);
+		writeByteArray(&current_function->code, OP_RETURN);
+
 
 		// Go back to the outer function once we are done parsing the inner one.
 		current_function = previous_function;
@@ -588,6 +592,17 @@ static void printStatement() {
 		eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after the end of a print statement");
 }
 
+static void returnStatement() {
+		if(matchAndEatToken(TOKEN_SEMICOLON)) {
+				WRITE_VALUE(CREATE_NIL);
+		}
+		else {
+				expression();
+				eatTokenOrReturnError(TOKEN_SEMICOLON, "Expected ';' after expression");
+		}
+		writeByteArray(&current_function->code, OP_RETURN);
+}
+
 static void statement() {
 		if(matchAndEatToken(TOKEN_LEFT_BRACE)) {
 				block();
@@ -603,6 +618,9 @@ static void statement() {
 		}
 		else if(matchAndEatToken(TOKEN_PRINT)) {
 				printStatement();
+		}
+		else if(matchAndEatToken(TOKEN_RETURN)) {
+				returnStatement();
 		}
 		else {
 				expressionStatement();

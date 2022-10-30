@@ -40,6 +40,7 @@ typedef enum {
 		OP_DIVIDE,
 		OP_PRINT,
 		OP_ASSIGN,
+		OP_RETURN,
 		OP_VALUE,
 		OP_GET_GLOBAL,
 		OP_ASSIGN_GLOBAL,
