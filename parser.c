@@ -569,6 +569,7 @@ static void forStatement() {
 		int increment_index = current_function->code.count;
 		// increment
 		expression();
+		writeByteArray(&current_function->code, OP_POP);
 		eatTokenOrReturnError(TOKEN_RIGHT_PAREN, "Expected ')' after the end of the for loop");
 
 		int check_condition_idx = setCheckPoint(OP_JUMP_BACKWARD);
@@ -582,8 +583,8 @@ static void forStatement() {
 		setBackWardJumpSize(go_back_to_idx, increment_index);
 
 		vm.scope--;
-		deleteOutOfScopeVariables();
 		setJumpSize(jump_out_body);
+		deleteOutOfScopeVariables();
 }
 
 static void printStatement() {
