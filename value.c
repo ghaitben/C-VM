@@ -43,6 +43,8 @@ bool valueEquals(Value *this, Value *other) {
 						 return this->as.boolean == other->as.boolean;
 		    case VALUE_TYPE_NUMBER:
 						 return this->as.number == other->as.number;
+				case VALUE_TYPE_FUNCTION:
+						 return !strcmp(this->as.function->name, other->as.function->name);
 		    default:
 						 CHECK(false, "Unreachable state");
 						 return false;
@@ -66,6 +68,11 @@ void freeValueArray(ValueArray *value_array) {
 
 // Grow the array when the number of elements reaches the max capacity of the array.
 uint8_t writeValueArray(ValueArray *value_array, Value value) {
+		// Check if this value is already in the array
+		for(int i = 0; i < value_array->count; ++i) {
+				if(valueEquals(&value_array->array[i], &value)) return i;
+		}
+
 		if(value_array->count + 1 > value_array->capacity) {
 				value_array->capacity = value_array->capacity > 0 ? 2 * value_array->capacity : 8;
 				value_array->array = realloc(value_array->array, sizeof(Value) * value_array->capacity);

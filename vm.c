@@ -193,8 +193,6 @@ static void printHandler() {
 
 void callFunction(Function *function, int arity) {
 		CallFrame *previous_frame = current_frame;
-		int previous_stack_top = vm.stack_top;
-
 		CallFrame *new_frame = &vm.frames[vm.frame_top++];
 		new_frame->function = function;
 		new_frame->ip = 0;
@@ -202,7 +200,6 @@ void callFunction(Function *function, int arity) {
 
 		current_frame = new_frame;
 		decode();
-
 
 		vm.frame_top--;
 		Value return_value = pop();
