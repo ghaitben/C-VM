@@ -1,5 +1,6 @@
 build/
 .cache/
+test_data/
 main.*
 debug.*
 compile_commands.json
