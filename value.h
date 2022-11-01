@@ -77,6 +77,25 @@ struct Value {
 void freeValue(Value *value);
 bool valueEquals(Value *this, Value *other);
 
+typedef struct {
+		int count;
+		int capacity;
+		struct {
+				uint8_t stack_pos;
+				Value value;
+		} *array;
+} ClosureArray;
+void initClosureArray(ClosureArray *closure_array);
+void freeClosureArray(ClosureArray *closure_array);
+void writeClosureArray(ClosureArray *closure_array, uint8_t stack_pos);
+
+typedef struct {
+		Function *function;
+		ClosureArray closure_array;
+} Closure;
+void initClosure(Closure *closure);
+void freeClosure(Closure *closure);
+
 // Array where all the values(i.e strings, numbers, booleans, ....) are stored.
 // All the objects will remain in the array even if they are popped from the stack.
 // This is in order to be able to free all the allocations after the program is done.

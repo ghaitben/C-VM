@@ -32,6 +32,44 @@ Function *createFunction(char *name) {
 		initByteArray(&function->code);
 }
 
+void initClosure(Closure *closure) {
+		closure->function = NULL;
+		initClosureArray(&closure->closure_array);
+}
+
+void freeClosure(Closure *closure) {
+		freeFunction(closure->function);
+		freeClosureArray(&closure->closure_array);
+		initClosure(closure);
+}
+
+Closure *createClosure(char *function_name) {
+		Closure *closure = malloc(sizeof(Closure));
+
+		closure->function = createFunction(function_name);
+		initClosure(closure);
+		return closure;
+}
+
+void initClosureArray(ClosureArray *closure_array) {
+		closure_array->count = 0;
+		closure_array->capacity = 0;
+		closure_array->array = NULL;
+}
+
+void freeClosureArray(ClosureArray *closure_array) {
+}
+
+void writeClosureArray(ClosureArray *closure_array, uint8_t stack_pos) {
+		if(closure_array->count + 1 > closure_array->capacity) {
+				closure_array->capacity = closure_array->capacity > 0 ? 2 * closure_array->capacity : 8;
+				closure_array->array = realloc(closure_array->array,
+								sizeof(*closure_array->array) * closure_array->capacity);
+		}
+		closure_array->array[closure_array->count].stack_pos = stack_pos;
+		closure_array->count++;
+}
+
 bool valueEquals(Value *this, Value *other) {
 		if(this->type != other->type) return false;
 		switch(this->type) {
